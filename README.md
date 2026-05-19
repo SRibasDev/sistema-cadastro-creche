@@ -307,11 +307,9 @@ Retorna todos os pets cadastrados formatados via DTO.
 
 ---
 
-# Visão Futura do Sistema
 
-O projeto foi estruturado pensando em crescimento e escalabilidade.
 
-### Funcionalidades planejadas:
+# Funcionalidades planejadas:
 
 - Sistema de agendamentos online;
 - Controle de hospedagem;
@@ -338,4 +336,3 @@ Toda nova funcionalidade deve respeitar:
 - Facilidade de manutenção;
 - Escalabilidade futura.
 
-Esse sistema representa a base tecnológica da Mundo Particular Lar e foi pensado para crescer junto com o negócio.
