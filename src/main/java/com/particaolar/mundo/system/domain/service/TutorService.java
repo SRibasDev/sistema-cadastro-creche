@@ -1,9 +1,8 @@
-package com.mundo.particaolar.system.domain.service;
+package com.particaolar.mundo.system.domain.service;
 
-import com.mundo.particaolar.system.domain.entity.Tutor;
-import com.mundo.particaolar.system.domain.repository.TutorRepository;
+import com.particaolar.mundo.system.domain.entity.Tutor;
+import com.particaolar.mundo.system.domain.repository.TutorRepository;
 import lombok.RequiredArgsConstructor;
-import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
 import java.util.List;
 

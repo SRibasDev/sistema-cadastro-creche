@@ -21,7 +21,7 @@ public class Pet {
     @Column(length = 50)
     private String raca;
 
-    private Integer idade;
+    private Long dataNascimento;
 
     @ManyToOne
     @JoinColumn(name = "tutor_id", nullable = false)

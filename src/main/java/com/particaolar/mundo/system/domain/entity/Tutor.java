@@ -1,7 +1,9 @@
 package com.mundo.particaolar.system.domain.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.List;
@@ -10,6 +12,8 @@ import java.util.List;
 @Table(name = "tb_tutores")
 @Getter
 @Setter
+@AllArgsConstructor
+@NoArgsConstructor
 public class Tutor {
 
     @Id
