@@ -1,26 +1,27 @@
-package com.mundo.particaolar.system.mapper;
+package com.particaolar.mundo.system.mapper;
 
-import com.mundo.particaolar.system.controller.PetController;
-import com.mundo.particaolar.system.domain.entity.Pet;
-import com.mundo.particaolar.system.dto.PetRequestDTO;
-import com.mundo.particaolar.system.dto.PetResponseDTO;
+import com.particaolar.mundo.system.domain.entity.Pet;
+import com.particaolar.mundo.system.dto.PetRequestDTO;
+import com.particaolar.mundo.system.dto.PetResponseDTO;
+import org.springframework.stereotype.Component;
 
+@Component
 public class PetMapper {
 
-    public static Pet toEntity(PetRequestDTO dto) {
+    public Pet toEntity(PetRequestDTO dto) {
         Pet petEntity = new Pet();
         petEntity.setNome(dto.nome());
         petEntity.setRaca(dto.raca());
-        petEntity.setIdade(dto.idade());
+        petEntity.setDataNascimento(dto.dataNascimento());
         return petEntity;
     }
 
-    public static PetResponseDTO toResponseDTO(Pet petEntity) {
+    public PetResponseDTO toResponseDTO(Pet petEntity) {
         return new PetResponseDTO(
                 petEntity.getId(),
                 petEntity.getNome(),
                 petEntity.getRaca(),
-                petEntity.getIdade()
+                petEntity.getDataNascimento()
         );
     }
 }
