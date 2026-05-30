@@ -1,4 +1,4 @@
-package com.mundo.particaolar.system.dto;
+package com.particaolar.mundo.system.dto;
 
-public record PetResponseDTO(Long id,String nome, String raca, Integer idade) {
+public record PetResponseDTO(Long id,String nome, String raca, Long dataNascimento) {
 }
