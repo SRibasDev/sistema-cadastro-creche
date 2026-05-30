@@ -1,4 +1,4 @@
-package com.mundo.particaolar.system;
+package com.particaolar.mundo.system;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
