@@ -1,4 +1,4 @@
-package com.mundo.particaolar.system.domain.entity;
+package com.particaolar.mundo.system.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -21,7 +21,8 @@ public class Pet {
     @Column(length = 50)
     private String raca;
 
-    private Integer idade;
+    @Column (nullable = false, length = 10)
+    private Long dataNascimento;
 
     @ManyToOne
     @JoinColumn(name = "tutor_id", nullable = false)

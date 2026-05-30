@@ -1,7 +1,6 @@
-package com.mundo.particaolar.system.domain.repository;
+package com.particaolar.mundo.system.domain.repository;
 
-import com.mundo.particaolar.system.domain.entity.Tutor;
-import com.mundo.particaolar.system.domain.repository.TutorRepository;
+import com.particaolar.mundo.system.domain.entity.Tutor;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
