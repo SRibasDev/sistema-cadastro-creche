@@ -1,4 +1,4 @@
-package com.mundo.particaolar.system.domain.entity;
+package com.particaolar.mundo.system.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
