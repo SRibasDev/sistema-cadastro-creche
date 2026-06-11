@@ -2,6 +2,7 @@ package com.particaolar.mundo.system.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "tb_pets")
@@ -22,7 +23,7 @@ public class Pet {
     private String raca;
 
     @Column (nullable = false, length = 10)
-    private Long dataNascimento;
+    private LocalDate dataNascimento;
 
     @ManyToOne
     @JoinColumn(name = "tutor_id", nullable = false)
