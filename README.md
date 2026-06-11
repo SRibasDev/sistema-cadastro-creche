@@ -6,7 +6,7 @@ O Sistema de Cadastro foi criado para atender a rotina de uma creche/hotel para 
 
 O cenário funciona assim:
 
-Quando um cliente chega na creche, a administradora realiza o cadastro das informações do tutor e do seu cão através de uma interface web. Esses dados passam por toda a arquitetura do sistema em Spring Boot até serem persistidos no banco de dados.
+Quando um cliente chega na creche, a administradora realiza o cadastro das informações do pet e do seu cão através de uma interface web. Esses dados passam por toda a arquitetura do sistema em Spring Boot até serem persistidos no banco de dados.
 
 Além do cadastro, o sistema também permite visualizar:
 
@@ -252,7 +252,7 @@ git checkout -b feature/nome-do-recurso
 ### Exemplos
 
 ```bash
-feature/cadastro-tutor
+feature/cadastro-pet
 feature/busca-pet
 feature/agendamento-online
 ```
@@ -270,7 +270,7 @@ git add .
 Realizar commit:
 
 ```bash
-git commit -m "feat: implementa service de cadastro de tutor"
+git commit -m "feat: implementa service de cadastro de pet"
 ```
 
 Enviar para o GitHub:
@@ -290,10 +290,10 @@ Após isso, deve ser aberto um Pull Request para revisão antes do merge na `mai
 ### Cadastrar Pet
 
 ```http
-POST /api/pets/tutor/{tutorId}
+POST /api/pets/pet/{tutorId}
 ```
 
-Responsável por cadastrar um novo pet vinculado a um tutor existente.
+Responsável por cadastrar um novo pet vinculado a um pet existente.
 
 ---
 
