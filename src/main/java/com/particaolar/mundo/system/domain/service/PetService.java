@@ -7,6 +7,7 @@ import com.particaolar.mundo.system.domain.repository.TutorRepository;
 import com.particaolar.mundo.system.dto.PetRequestDTO;
 import com.particaolar.mundo.system.dto.PetResponseDTO;
 import com.particaolar.mundo.system.exception.PetNotFoundException;
+import com.particaolar.mundo.system.exception.TutorNotFoundException;
 import com.particaolar.mundo.system.mapper.PetMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,16 @@ public class PetService {
     private final TutorRepository tutorRepository;
     private final PetRepository petRepository;
     private final PetMapper petMapper;
+
+    @Transactional
+    public PetResponseDTO salvar(PetRequestDTO petRequestDTO, Long tutorId){
+        Tutor tutor = tutorRepository.findById(tutorId)
+                .orElseThrow(() -> new TutorNotFoundException(tutorId));
+        Pet pet = petMapper.toEntity(petRequestDTO);
+        pet.setTutor(tutor);
+        Pet petSalvo = petRepository.save(pet);
+        return petMapper.toResponseDTO(petSalvo);
+    }
 
     @Transactional (readOnly = true)
     public List<PetResponseDTO> listarTodos (){
@@ -35,14 +46,12 @@ public class PetService {
         return petMapper.toResponseDTO(pet);
     }
 
-    @Transactional
-    public PetResponseDTO salvar(PetRequestDTO petRequestDTO, Long tutorId){
-        Tutor tutor = tutorRepository.findById(tutorId)
-                .orElseThrow(() -> new PetNotFoundException(tutorId));
-        Pet pet = petMapper.toEntity(petRequestDTO);
-        pet.setTutor(tutor);
-        Pet petSalvo = petRepository.save(pet);
-        return petMapper.toResponseDTO(petSalvo);
+    @Transactional(readOnly = true)
+    public List<PetResponseDTO> buscarPetPorTutorId(Long tutorId) {
+        return petRepository.findByTutorId(tutorId)
+                .stream()
+                .map(petMapper::toResponseDTO)
+                .toList();
     }
 
     @Transactional
@@ -52,7 +61,6 @@ public class PetService {
         petMapper.updateEntityFromDTO(requestDTO,pet);
         Pet petAtualizado = petRepository.save(pet);
         return petMapper.toResponseDTO(petAtualizado);
-
     }
 
     @Transactional

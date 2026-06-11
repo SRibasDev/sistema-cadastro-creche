@@ -2,36 +2,56 @@ package com.particaolar.mundo.system.domain.service;
 
 import com.particaolar.mundo.system.domain.entity.Tutor;
 import com.particaolar.mundo.system.domain.repository.TutorRepository;
+import com.particaolar.mundo.system.dto.TutorRequestDTO;
+import com.particaolar.mundo.system.dto.TutorResponseDTO;
+import com.particaolar.mundo.system.exception.BusinessException;
+import com.particaolar.mundo.system.exception.TutorNotFoundException;
+import com.particaolar.mundo.system.mapper.TutorMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TutorService {
 
     private final TutorRepository tutorRepository;
+    private final TutorMapper tutorMapper;
 
-    public Tutor salvarTutor(Tutor tutor) {
+    public TutorResponseDTO salvarTutor(TutorRequestDTO dto) {
 
-        if (tutorRepository.existsByCpf(tutor.getCpf())) {
-            throw new IllegalArgumentException("Já existe um tutor cadastrado com este CPF.");
+        if (tutorRepository.existsByCpf(dto.cpf())) {
+            throw new BusinessException("Já existe um tutor com este CPF.");
         }
 
-        if (tutorRepository.existsByTelefone(tutor.getTelefone())) {
-            throw new IllegalArgumentException("Já existe um tutor cadastrado com este Telefone.");
+        if (tutorRepository.existsByTelefone(dto.telefone())) {
+            throw new BusinessException("Já existe um tutor cadastrado com este Telefone.");
         }
 
-        System.out.println("Tutor validado com sucesso: " + tutor.getNome());
-        return tutorRepository.save(tutor);
+        log.info("Tutor validado com sucesso: {}", dto.nome());
+
+        Tutor tutor = tutorMapper.toEntity(dto);
+        Tutor tutorSalvo = tutorRepository.save(tutor);
+
+        return tutorMapper.toResponseDTO(tutorSalvo);
     }
 
-    public List<Tutor> listarTodos() {
-        return tutorRepository.findAll();
+    public List<TutorResponseDTO> listarTodos() {
+        return tutorRepository.findAll()
+                .stream()
+                .map(tutorMapper::toResponseDTO)
+                .toList();
     }
 
-    public Tutor buscarPorId(Long id) {
-        return tutorRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Tutor não encontrado!"));
+    public TutorResponseDTO buscarPorId (Long tutorId) {
+         Tutor tutor = tutorRepository.findById(tutorId)
+                .orElseThrow(() -> new TutorNotFoundException(tutorId));
+         TutorResponseDTO dto = tutorMapper.toResponseDTO(tutor);
+
+        return dto;
     }
 }
+
