@@ -1,7 +1,7 @@
 package com.particaolar.mundo.system.exception;
 
 public class PetNotFoundException extends RuntimeException {
-    public PetNotFoundException(String message) {
-        super(message);
+    public PetNotFoundException(Long id) {
+        super("Pet não encontrado com o id: " + id);
     }
 }
