@@ -10,6 +10,7 @@ import com.particaolar.mundo.system.mapper.TutorMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -21,24 +22,7 @@ public class TutorService {
     private final TutorRepository tutorRepository;
     private final TutorMapper tutorMapper;
 
-    public TutorResponseDTO salvarTutor(TutorRequestDTO dto) {
-
-        if (tutorRepository.existsByCpf(dto.cpf())) {
-            throw new BusinessException("Já existe um tutor com este CPF.");
-        }
-
-        if (tutorRepository.existsByTelefone(dto.telefone())) {
-            throw new BusinessException("Já existe um tutor cadastrado com este Telefone.");
-        }
-
-        log.info("Tutor validado com sucesso: {}", dto.nome());
-
-        Tutor tutor = tutorMapper.toEntity(dto);
-        Tutor tutorSalvo = tutorRepository.save(tutor);
-
-        return tutorMapper.toResponseDTO(tutorSalvo);
-    }
-
+    @Transactional(readOnly = true)
     public List<TutorResponseDTO> listarTodos() {
         return tutorRepository.findAll()
                 .stream()
@@ -46,6 +30,21 @@ public class TutorService {
                 .toList();
     }
 
+    @Transactional
+    public TutorResponseDTO salvarTutor(TutorRequestDTO dto) {
+        if (tutorRepository.existsByCpf(dto.cpf())) {
+            throw new BusinessException("Já existe um tutor com este CPF.");
+        }
+        if (tutorRepository.existsByTelefone(dto.telefone())) {
+            throw new BusinessException("Já existe um tutor cadastrado com este Telefone.");
+        }
+        log.info("Tutor validado com sucesso: {}", dto.nome());
+        Tutor tutor = tutorMapper.toEntity(dto);
+        Tutor tutorSalvo = tutorRepository.save(tutor);
+        return tutorMapper.toResponseDTO(tutorSalvo);
+    }
+
+    @Transactional(readOnly = true)
     public TutorResponseDTO buscarPorId (Long tutorId) {
          Tutor tutor = tutorRepository.findById(tutorId)
                 .orElseThrow(() -> new TutorNotFoundException(tutorId));
@@ -53,6 +52,7 @@ public class TutorService {
         return dto;
     }
 
+    @Transactional
     public TutorResponseDTO atualizar(TutorRequestDTO requestDTO, Long tutorId){
         Tutor tutor = tutorRepository.findById(tutorId)
                 .orElseThrow(()-> new TutorNotFoundException(tutorId));
@@ -60,7 +60,7 @@ public class TutorService {
         Tutor tutorAtualizado = tutorRepository.save(tutor);
         return tutorMapper.toResponseDTO(tutorAtualizado);
     }
-
+    @Transactional
     public void deletar(Long tutorId){
         Tutor tutor = tutorRepository.findById(tutorId)
                 .orElseThrow(()-> new TutorNotFoundException(tutorId));
