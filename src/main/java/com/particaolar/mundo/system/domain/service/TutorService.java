@@ -50,8 +50,21 @@ public class TutorService {
          Tutor tutor = tutorRepository.findById(tutorId)
                 .orElseThrow(() -> new TutorNotFoundException(tutorId));
          TutorResponseDTO dto = tutorMapper.toResponseDTO(tutor);
-
         return dto;
+    }
+
+    public TutorResponseDTO atualizar(TutorRequestDTO requestDTO, Long tutorId){
+        Tutor tutor = tutorRepository.findById(tutorId)
+                .orElseThrow(()-> new TutorNotFoundException(tutorId));
+        tutorMapper.updateEntitiyFromDTO(requestDTO,tutor);
+        Tutor tutorAtualizado = tutorRepository.save(tutor);
+        return tutorMapper.toResponseDTO(tutorAtualizado);
+    }
+
+    public void deletar(Long tutorId){
+        Tutor tutor = tutorRepository.findById(tutorId)
+                .orElseThrow(()-> new TutorNotFoundException(tutorId));
+        tutorRepository.delete(tutor);
     }
 }
 
