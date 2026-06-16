@@ -56,7 +56,7 @@ public class TutorService {
     public TutorResponseDTO atualizar(TutorRequestDTO requestDTO, Long tutorId){
         Tutor tutor = tutorRepository.findById(tutorId)
                 .orElseThrow(()-> new TutorNotFoundException(tutorId));
-        tutorMapper.updateEntitiyFromDTO(requestDTO,tutor);
+        tutorMapper.updateEntityFromDTO(requestDTO,tutor);
         Tutor tutorAtualizado = tutorRepository.save(tutor);
         return tutorMapper.toResponseDTO(tutorAtualizado);
     }
