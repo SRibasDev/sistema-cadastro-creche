@@ -6,14 +6,15 @@ O Sistema de Cadastro foi criado para atender a rotina de uma creche/hotel para 
 
 O cenário funciona assim:
 
-Quando um cliente chega na creche, a administradora realiza o cadastro das informações do pet e do seu cão através de uma interface web. Esses dados passam por toda a arquitetura do sistema em Spring Boot até serem persistidos no banco de dados.
+Quando um cliente chega na creche, a administradora realiza o cadastro das informações do tutor e do seu cão através de uma interface web. Esses dados passam por toda a arquitetura do sistema em Spring Boot até serem persistidos no banco de dados.
 
-Além do cadastro, o sistema também permite visualizar:
+Além do cadastro, o sistema também permite:
 
-- Todos os pets cadastrados;
-- Seus respectivos tutores;
-- Informações completas de cada registro.
+- Cadastrar, buscar, atualizar e deletar tutores;
+- Cadastrar, buscar, atualizar e deletar pets;
+- Listar todos os pets de um tutor específico.
 
+---
 
 # Arquitetura do Sistema
 
@@ -38,7 +39,7 @@ REPOSITORY (Acesso ao Banco)
 DATABASE (MySQL)
 ```
 
-O fluxo deve permanecer sempre unidirecional para manter a organização do projeyo.
+O fluxo deve permanecer sempre unidirecional para manter a organização do projeto.
 
 ---
 
@@ -53,16 +54,7 @@ Pacote responsável pelas rotas HTTP da aplicação.
 - Receber requisições;
 - Capturar parâmetros;
 - Retornar respostas HTTP;
-- Definir status corretos (`200`, `201`, `404`, etc.).
-
-### Exemplo:
-
-```java
-@RestController
-@RequestMapping("/api/pets")
-public class PetController {
-}
-```
+- Definir status corretos (`200`, `201`, `204`, `404`, etc.).
 
 ---
 
@@ -74,27 +66,26 @@ Os DTOs evitam a exposição direta das entidades para a camada web e ajudam a m
 
 ### Divisão:
 
-- `RequestDTO` → dados recebidos;
-- `ResponseDTO` → dados enviados na resposta.
+- `RequestDTO` → dados recebidos com validações (`@NotBlank`, `@CPF`, etc.);
+- `ResponseDTO` → dados enviados na resposta, sem expor campos sensíveis como CPF.
 
 ---
 
-## `controller.mapper`
+## `mapper`
 
-Responsável pela conversão entre DTOs e Entities.
+Responsável pela conversão entre DTOs e entidades.
 
 Os mappers ajudam a:
 
 - Reduzir acoplamento;
 - Evitar repetição de código;
-- Prevenir recursão infinita em relacionamentos JPA.
+- Manter a separação entre camadas.
 
-### Exemplo:
+### Métodos:
 
-```java
-PetMapper.toEntity(dto);
-PetMapper.toResponse(entity);
-```
+- `toEntity(dto)` → converte RequestDTO em entidade;
+- `toResponseDTO(entity)` → converte entidade em ResponseDTO;
+- `updateEntityFromDTO(dto, entity)` → atualiza entidade existente com dados do DTO.
 
 ---
 
@@ -104,12 +95,10 @@ Camada onde ficam as regras de negócio do sistema.
 
 ### Responsabilidades:
 
-- Validações;
+- Validações de negócio (CPF e telefone duplicados);
 - Processamento das informações;
 - Comunicação com os repositórios;
-- Regras específicas da creche.
-
-Essa é a principal camada da aplicação.
+- Lançamento de exceções customizadas.
 
 ---
 
@@ -117,47 +106,44 @@ Essa é a principal camada da aplicação.
 
 Contém as entidades JPA mapeadas para o banco de dados.
 
-### Responsável por:
+### Relacionamentos:
 
-- Representar tabelas;
-- Definir relacionamentos;
-- Configurar persistência.
-
-### Exemplo:
-
-```java
-@Entity
-public class Pet {
-}
-```
-
-### Relacionamentos utilizados:
-
-- `@OneToMany`
-- `@ManyToOne`
-- `@OneToOne`
+- `Tutor` possui `@OneToMany` com `Pet`;
+- `Pet` possui `@ManyToOne` com `Tutor`.
 
 ---
 
 ## `domain.repository`
 
-Interfaces responsáveis pelo acesso ao banco de dados utilizando Spring Data JPA.
+Interfaces que estendem `JpaRepository` para acesso ao banco de dados.
 
-### Exemplo:
+### Métodos customizados:
 
-```java
-public interface PetRepository extends JpaRepository<Pet, Long> {
-}
-```
+- `PetRepository.findByTutorId(Long tutorId)` → lista pets por tutor;
+- `TutorRepository.existsByCpf(String cpf)` → verifica CPF duplicado;
+- `TutorRepository.existsByTelefone(String telefone)` → verifica telefone duplicado.
+
+---
+
+## `exception`
+
+Contém as exceções customizadas e o handler global de erros.
+
+- `PetNotFoundException` → lançada quando um pet não é encontrado (`404`);
+- `TutorNotFoundException` → lançada quando um tutor não é encontrado (`404`);
+- `BusinessException` → lançada quando uma regra de negócio é violada (`400`);
+- `GlobalExceptionHandler` → captura todas as exceções e retorna respostas JSON padronizadas.
 
 ---
 
 # Tecnologias Utilizadas
 
-- Java 24
-- Spring Boot 4.x
+- Java 21
+- Spring Boot 3.4.1
 - Spring Web
 - Spring Data JPA
+- Hibernate Validator
+- Springdoc OpenAPI (Swagger UI)
 - MySQL 8
 - Docker
 - Docker Compose
@@ -170,55 +156,130 @@ public interface PetRepository extends JpaRepository<Pet, Long> {
 
 ## Pré-requisitos
 
-Antes de iniciar, certifique-se de possuir:
-
 - Docker Desktop instalado e ativo;
-- Java 24 configurado;
+- Java 21 configurado;
 - Git instalado;
 - IntelliJ IDEA (recomendado).
 
 ---
 
-# Clonando o Projeto
+## Clonando o Projeto
 
 ```bash
 git clone https://github.com/SRibasDev/sistema-cadastro-creche
-```
-
-```bash
 cd sistema-cadastro-creche
 ```
 
 ---
 
-# Subindo o Banco de Dados
+## Configurando as Variáveis de Ambiente
 
-Na raiz do projeto, execute:
+Crie um arquivo `.env` na raiz do projeto baseado no `.env.example`:
+
+```env
+DB_URL=jdbc:mysql://localhost:3306/creche_pet_db
+DB_USERNAME=root
+DB_PASSWORD=sua_senha
+```
+
+> O arquivo `.env` está no `.gitignore` e nunca deve ser commitado.
+
+Configure as variáveis no IntelliJ em `Edit Configurations → Environment Variables`.
+
+---
+
+## Subindo o Banco de Dados
 
 ```bash
 docker-compose up -d
 ```
 
-### Importante
-
-Na primeira execução, o MySQL pode levar entre 15 e 20 segundos para inicializar completamente. Aguarde esse tempo antes de iniciar o Spring Boot para evitar erros de conexão.
+Na primeira execução, aguarde 15 a 20 segundos antes de iniciar o Spring Boot.
 
 ---
 
-# Executando o Spring Boot
+## Executando o Spring Boot
 
 1. Abra o projeto no IntelliJ IDEA;
-2. Aguarde o Maven baixar as dependências do `pom.xml`;
-3. Execute a classe:
-
-```text
-SystemApplication.java
-```
+2. Aguarde o Maven baixar as dependências;
+3. Execute a classe `SystemApplication.java`.
 
 A aplicação estará disponível em:
 
-```text
+```
 http://localhost:8080
+```
+
+A documentação Swagger estará disponível em:
+
+```
+http://localhost:8080/swagger-ui/index.html
+```
+
+---
+
+# Endpoints da API
+
+## Tutores
+
+| Método | Endpoint | Descrição | Status |
+|--------|----------|-----------|--------|
+| `POST` | `/api/tutores` | Cadastrar tutor | `201` |
+| `GET` | `/api/tutores` | Listar todos os tutores | `200` |
+| `GET` | `/api/tutores/{id}` | Buscar tutor por ID | `200` |
+| `PUT` | `/api/tutores/{id}` | Atualizar tutor | `200` |
+| `DELETE` | `/api/tutores/{id}` | Deletar tutor | `204` |
+
+## Pets
+
+| Método | Endpoint | Descrição | Status |
+|--------|----------|-----------|--------|
+| `POST` | `/api/pets/{tutorId}` | Cadastrar pet vinculado a um tutor | `201` |
+| `GET` | `/api/pets` | Listar todos os pets | `200` |
+| `GET` | `/api/pets/{petId}` | Buscar pet por ID | `200` |
+| `GET` | `/api/pets/tutor/{tutorId}` | Listar pets de um tutor | `200` |
+| `PUT` | `/api/pets/{petId}` | Atualizar pet | `200` |
+| `DELETE` | `/api/pets/{petId}` | Deletar pet | `204` |
+
+---
+
+# Exemplos de Requisição
+
+## Cadastrar Tutor
+
+```json
+POST /api/tutores
+{
+  "nome": "João Silva",
+  "telefone": "11999999999",
+  "cpf": "529.982.247-25"
+}
+```
+
+## Cadastrar Pet
+
+```json
+POST /api/pets/1
+{
+  "nome": "Rex",
+  "raca": "Labrador",
+  "dataNascimento": "2020-03-15"
+}
+```
+
+---
+
+# Tratamento de Erros
+
+Todas as respostas de erro seguem o padrão:
+
+```json
+{
+  "status": 404,
+  "erro": "Recurso não encontrado",
+  "mensagem": "Pet não encontrado com o id: 99",
+  "timestamp": "2024-06-03T14:32:10"
+}
 ```
 
 ---
@@ -229,87 +290,27 @@ Para manter a branch `main` sempre estável, o projeto utiliza o padrão de Feat
 
 Nunca realize commits diretamente na `main`.
 
----
-
-## Atualizando a Main
-
-```bash
-git checkout main
-```
-
-```bash
-git pull origin main
-```
-
----
-
 ## Criando uma Nova Feature
 
 ```bash
+git checkout main
+git pull origin main
 git checkout -b feature/nome-do-recurso
 ```
 
-### Exemplos
-
-```bash
-feature/cadastro-pet
-feature/busca-pet
-feature/agendamento-online
-```
-
----
-
 ## Finalizando uma Feature
-
-Adicionar alterações:
 
 ```bash
 git add .
-```
-
-Realizar commit:
-
-```bash
-git commit -m "feat: implementa service de cadastro de pet"
-```
-
-Enviar para o GitHub:
-
-```bash
+git commit -m "feat: descrição do que foi implementado"
 git push origin feature/nome-do-recurso
 ```
 
-Após isso, deve ser aberto um Pull Request para revisão antes do merge na `main`.
+Após isso, abra um Pull Request para revisão antes do merge na `main`.
 
 ---
 
-# Endpoints da API
-
-## Pets
-
-### Cadastrar Pet
-
-```http
-POST /api/pets/pet/{tutorId}
-```
-
-Responsável por cadastrar um novo pet vinculado a um pet existente.
-
----
-
-### Listar Pets
-
-```http
-GET /api/pets
-```
-
-Retorna todos os pets cadastrados formatados via DTO.
-
----
-
-
-
-# Funcionalidades planejadas:
+# Funcionalidades Planejadas
 
 - Sistema de agendamentos online;
 - Controle de hospedagem;
@@ -335,4 +336,3 @@ Toda nova funcionalidade deve respeitar:
 - Baixo acoplamento;
 - Facilidade de manutenção;
 - Escalabilidade futura.
-
