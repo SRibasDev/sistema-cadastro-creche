@@ -31,20 +31,20 @@ public class TutorController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<TutorResponseDTO> buscarPorId(@PathVariable Long tutorId) {
-        TutorResponseDTO responseDTO = tutorService.buscarPorId(tutorId);
+    public ResponseEntity<TutorResponseDTO> buscarPorId(@PathVariable Long id) {
+        TutorResponseDTO responseDTO = tutorService.buscarPorId(id);
         return ResponseEntity.ok(responseDTO);
     }
+
     @PutMapping("/{id}")
-    public ResponseEntity <TutorResponseDTO> atualizar(@PathVariable Long tutorId,@RequestBody @Validated TutorRequestDTO requestDTO){
-        TutorResponseDTO tutor = tutorService.atualizar(requestDTO,tutorId);
+    public ResponseEntity <TutorResponseDTO> atualizar(@PathVariable Long id,@RequestBody @Validated TutorRequestDTO requestDTO){
+        TutorResponseDTO tutor = tutorService.atualizar(requestDTO,id);
         return ResponseEntity.ok(tutor);
     }
+
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletar(@PathVariable Long tutorId){
-       tutorService.deletar(tutorId);
+    public ResponseEntity<Void> deletar(@PathVariable Long id){
+       tutorService.deletar(id);
         return ResponseEntity.noContent().build();
     }
-
-
 }
