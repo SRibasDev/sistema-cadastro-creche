@@ -3,13 +3,13 @@ package com.particaolar.mundo.system.mapper;
 import com.particaolar.mundo.system.domain.entity.Pet;
 import com.particaolar.mundo.system.dto.PetRequestDTO;
 import com.particaolar.mundo.system.dto.PetResponseDTO;
-import org.jspecify.annotations.NonNull;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.stereotype.Component;
 
 @Component
 public class PetMapper {
 
-    public Pet toEntity(@NonNull PetRequestDTO dto) {
+    public Pet toEntity(@NotNull PetRequestDTO dto) {
         Pet petEntity = new Pet();
         petEntity.setNome(dto.nome());
         petEntity.setRaca(dto.raca());
@@ -17,7 +17,7 @@ public class PetMapper {
         return petEntity;
     }
 
-    public PetResponseDTO toResponseDTO(@NonNull Pet petEntity) {
+    public PetResponseDTO toResponseDTO(@NotNull Pet petEntity) {
         return new PetResponseDTO(
                 petEntity.getId(),
                 petEntity.getNome(),
@@ -25,7 +25,7 @@ public class PetMapper {
                 petEntity.getDataNascimento()
         );
     }
-    public void updateEntityFromDTO(@NonNull PetRequestDTO dto, @NonNull Pet pet) {
+    public void updateEntityFromDTO(@NotNull PetRequestDTO dto, @NotNull Pet pet) {
         pet.setNome(dto.nome());
         pet.setRaca(dto.raca());
         pet.setDataNascimento(dto.dataNascimento());
