@@ -4,12 +4,13 @@ import com.particaolar.mundo.system.domain.entity.Pet;
 import com.particaolar.mundo.system.domain.entity.Tutor;
 import com.particaolar.mundo.system.domain.repository.PetRepository;
 import com.particaolar.mundo.system.domain.repository.TutorRepository;
-import com.particaolar.mundo.system.dto.PetRequestDTO;
-import com.particaolar.mundo.system.dto.PetResponseDTO;
+import com.particaolar.mundo.system.dto.petDTO.PetRequestDTO;
+import com.particaolar.mundo.system.dto.petDTO.PetResponseDTO;
 import com.particaolar.mundo.system.exception.PetNotFoundException;
 import com.particaolar.mundo.system.exception.TutorNotFoundException;
 import com.particaolar.mundo.system.mapper.PetMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
@@ -17,18 +18,20 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PetService {
     private final TutorRepository tutorRepository;
     private final PetRepository petRepository;
     private final PetMapper petMapper;
 
     @Transactional
-    public PetResponseDTO salvar(PetRequestDTO petRequestDTO, Long tutorId){
+    public PetResponseDTO salvar(PetRequestDTO requestDTO, Long tutorId){
         Tutor tutor = tutorRepository.findById(tutorId)
                 .orElseThrow(() -> new TutorNotFoundException(tutorId));
-        Pet pet = petMapper.toEntity(petRequestDTO);
+        Pet pet = petMapper.toEntity(requestDTO);
         pet.setTutor(tutor);
         Pet petSalvo = petRepository.save(pet);
+        log.info("Pet salvo com sucesso: {} | Tutor: {}", petSalvo.getNome(), tutor.getNome());
         return petMapper.toResponseDTO(petSalvo);
     }
 
@@ -48,6 +51,9 @@ public class PetService {
 
     @Transactional(readOnly = true)
     public List<PetResponseDTO> buscarPetPorTutorId(Long tutorId) {
+        if (!tutorRepository.existsById(tutorId)) {
+            throw new TutorNotFoundException(tutorId);
+        }
         return petRepository.findByTutorId(tutorId)
                 .stream()
                 .map(petMapper::toResponseDTO)
@@ -68,5 +74,6 @@ public class PetService {
         Pet pet = petRepository.findById(id)
                 .orElseThrow(() -> new PetNotFoundException(id));
         petRepository.delete(pet);
+        log.info("Pet deletado: id={}", id);
     }
 }
