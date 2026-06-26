@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -29,6 +30,23 @@ public class Tutor {
     @Column(unique = true, length = 14)
     private String cpf;
 
-    @OneToMany(mappedBy = "tutor", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "tutor", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private List<Pet> pets;
+
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime criadoEm;
+
+    @Column(nullable = false)
+    private LocalDateTime atualizadoEm;
+
+    @PrePersist
+    private void prePersist() {
+        this.criadoEm = LocalDateTime.now();
+        this.atualizadoEm = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    private void preUpdate() {
+        this.atualizadoEm = LocalDateTime.now();
+    }
 }

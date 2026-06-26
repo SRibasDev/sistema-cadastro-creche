@@ -3,6 +3,8 @@ package com.particaolar.mundo.system.domain.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "tb_pets")
@@ -22,10 +24,30 @@ public class Pet {
     @Column(length = 50)
     private String raca;
 
-    @Column (nullable = false, length = 10)
+    @Column(nullable = false)
     private LocalDate dataNascimento;
 
     @ManyToOne
     @JoinColumn(name = "tutor_id", nullable = false)
     private Tutor tutor;
+
+    @OneToMany(mappedBy = "pet", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    private List<Hospedagem> hospedagens;
+
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime criadoEm;
+
+    @Column(nullable = false)
+    private LocalDateTime atualizadoEm;
+
+    @PrePersist
+    private void prePersist() {
+        this.criadoEm = LocalDateTime.now();
+        this.atualizadoEm = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    private void preUpdate() {
+        this.atualizadoEm = LocalDateTime.now();
+    }
 }
