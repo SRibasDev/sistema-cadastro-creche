@@ -1,8 +1,8 @@
 package com.particaolar.mundo.system.controller;
 
 import com.particaolar.mundo.system.domain.service.TutorService;
-import com.particaolar.mundo.system.dto.TutorRequestDTO;
-import com.particaolar.mundo.system.dto.TutorResponseDTO;
+import com.particaolar.mundo.system.dto.tutorDTO.TutorRequestDTO;
+import com.particaolar.mundo.system.dto.tutorDTO.TutorResponseDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
