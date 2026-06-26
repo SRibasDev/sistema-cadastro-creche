@@ -1,8 +1,8 @@
 package com.particaolar.mundo.system.mapper;
 
 import com.particaolar.mundo.system.domain.entity.Pet;
-import com.particaolar.mundo.system.dto.PetRequestDTO;
-import com.particaolar.mundo.system.dto.PetResponseDTO;
+import com.particaolar.mundo.system.dto.petDTO.PetRequestDTO;
+import com.particaolar.mundo.system.dto.petDTO.PetResponseDTO;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.stereotype.Component;
 
@@ -22,7 +22,8 @@ public class PetMapper {
                 petEntity.getId(),
                 petEntity.getNome(),
                 petEntity.getRaca(),
-                petEntity.getDataNascimento()
+                petEntity.getDataNascimento(),
+                petEntity.getTutor().getId()
         );
     }
     public void updateEntityFromDTO(@NotNull PetRequestDTO dto, @NotNull Pet pet) {
