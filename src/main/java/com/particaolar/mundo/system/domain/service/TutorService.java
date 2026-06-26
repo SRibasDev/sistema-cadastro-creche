@@ -26,10 +26,10 @@ public class TutorService {
     @Transactional
     public TutorResponseDTO salvarTutor(TutorRequestDTO requestDTO) {
         if (tutorRepository.existsByCpf(requestDTO.cpf())) {
-            throw new TutorCpfAlreadyExistsException("Já existe um tutor com este CPF.");
+            throw new TutorCpfAlreadyExistsException(requestDTO.cpf());
         }
         if (tutorRepository.existsByTelefone(requestDTO.telefone())) {
-            throw new TutorPhoneNumberAlreadyExistsException("Já existe um tutor cadastrado com este Telefone.");
+            throw new TutorPhoneNumberAlreadyExistsException(requestDTO.telefone());
         }
         log.info("Tutor validado com sucesso: {}", requestDTO.nome());
         Tutor tutor = tutorMapper.toEntity(requestDTO);
