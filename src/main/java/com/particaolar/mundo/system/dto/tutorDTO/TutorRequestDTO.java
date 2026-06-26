@@ -1,4 +1,4 @@
-package com.particaolar.mundo.system.dto;
+package com.particaolar.mundo.system.dto.tutorDTO;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -11,6 +11,7 @@ public record TutorRequestDTO(
         String nome,
 
         @NotBlank(message = "Telefone é obrigatório")
+        @Size(min=11,max=11)
         String telefone,
 
         @NotBlank(message = "CPF é obrigatório")
