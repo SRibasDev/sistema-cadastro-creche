@@ -1,8 +1,8 @@
 package com.particaolar.mundo.system.controller;
 
 import com.particaolar.mundo.system.domain.service.PetService;
-import com.particaolar.mundo.system.dto.PetRequestDTO;
-import com.particaolar.mundo.system.dto.PetResponseDTO;
+import com.particaolar.mundo.system.dto.petDTO.PetRequestDTO;
+import com.particaolar.mundo.system.dto.petDTO.PetResponseDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
