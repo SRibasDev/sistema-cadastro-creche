@@ -18,6 +18,7 @@ target/
 *.iws
 *.iml
 *.ipr
+*.xml
 
 ### NetBeans ###
 /nbproject/private/
@@ -32,4 +33,9 @@ build/
 ### VS Code ###
 .vscode/
 
+# Ambiente e segredos
 .env
+*.env
+
+# Logs
+*.log
