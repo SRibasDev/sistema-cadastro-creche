@@ -33,9 +33,9 @@ build/
 ### VS Code ###
 .vscode/
 
+# Logs
+*.log
+
 # Ambiente e segredos
 .env
 *.env
-
-# Logs
-*.log
