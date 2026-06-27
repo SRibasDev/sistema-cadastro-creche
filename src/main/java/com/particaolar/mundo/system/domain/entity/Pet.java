@@ -21,7 +21,7 @@ public class Pet {
     @Column(nullable = false, length = 100)
     private String nome;
 
-    @Column(length = 50)
+    @Column(nullable = false, length = 50)
     private String raca;
 
     @Column(nullable = false)
@@ -39,6 +39,9 @@ public class Pet {
 
     @Column(nullable = false)
     private LocalDateTime atualizadoEm;
+
+    @Column(name = "ativo")
+    private Boolean ativo = true;
 
     @PrePersist
     private void prePersist() {
