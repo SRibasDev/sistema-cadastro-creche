@@ -1,9 +1,12 @@
 package com.particaolar.mundo.system.controller;
 
 import com.particaolar.mundo.system.domain.service.PetService;
-import com.particaolar.mundo.system.dto.petDTO.PetRequestDTO;
-import com.particaolar.mundo.system.dto.petDTO.PetResponseDTO;
+import com.particaolar.mundo.system.dto.request.PetRequestDTO;
+import com.particaolar.mundo.system.dto.response.PetResponseDTO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -25,13 +28,19 @@ public class PetController {
     }
 
     @GetMapping
-    public ResponseEntity <List<PetResponseDTO>> listarTodos(){
-        List <PetResponseDTO> pets = petService.listarTodos();
-        return ResponseEntity.ok(pets);
+    public ResponseEntity <Page<PetResponseDTO>> listarTodos(@PageableDefault(size = 10, page = 0, sort = "nome") Pageable pageable){
+       Page <PetResponseDTO> response = petService.listarTodos(pageable);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping ("/{petId}")
+    public ResponseEntity<PetResponseDTO> buscarPetPorPetId(@PathVariable Long petId){
+        PetResponseDTO petResponseDTO = petService.buscarPetPorPetId(petId);
+        return ResponseEntity.ok(petResponseDTO);
     }
 
     @GetMapping("/tutor/{tutorId}")
-    public ResponseEntity<List<PetResponseDTO>> listarPorId(@PathVariable Long tutorId){
+    public ResponseEntity<List<PetResponseDTO>> listarPorTutorId(@PathVariable Long tutorId){
        List<PetResponseDTO> pets = petService.buscarPetPorTutorId(tutorId);
        return ResponseEntity.ok(pets);
     }
