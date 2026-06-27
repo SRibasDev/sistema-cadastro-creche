@@ -3,8 +3,8 @@ package com.particaolar.mundo.system.service;
 import com.particaolar.mundo.system.domain.entity.Tutor;
 import com.particaolar.mundo.system.domain.repository.TutorRepository;
 import com.particaolar.mundo.system.domain.service.TutorService;
-import com.particaolar.mundo.system.dto.tutorDTO.TutorRequestDTO;
-import com.particaolar.mundo.system.dto.tutorDTO.TutorResponseDTO;
+import com.particaolar.mundo.system.dto.request.TutorRequestDTO;
+import com.particaolar.mundo.system.dto.response.TutorResponseDTO;
 import com.particaolar.mundo.system.exception.TutorCpfAlreadyExistsException;
 import com.particaolar.mundo.system.exception.TutorNotFoundException;
 import com.particaolar.mundo.system.exception.TutorPhoneNumberAlreadyExistsException;
@@ -14,6 +14,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Optional;
@@ -83,23 +87,31 @@ class TutorServiceTest {
     }
 
     @Test
-    void deveListarTodosOsTutores() {
+    void deveListarTodosOsTutoresAtivosPaginados() {
+        Pageable pageable = PageRequest.of(0, 10);
         List<Tutor> tutores = List.of(new Tutor(), new Tutor());
+        Page<Tutor> paginaDeTutores = new PageImpl<>(tutores); // Converte List para Page
         TutorResponseDTO responseDTO = new TutorResponseDTO(1L, "João", "11999999999");
 
-        when(tutorRepository.findAll()).thenReturn(tutores);
+        // Simula o novo método do repositório
+        when(tutorRepository.findByAtivoTrue(pageable)).thenReturn(paginaDeTutores);
         when(tutorMapper.toResponseDTO(any(Tutor.class))).thenReturn(responseDTO);
 
-        List<TutorResponseDTO> resultado = tutorService.listarTodos();
+        Page<TutorResponseDTO> resultado = tutorService.listarTodos(pageable);
 
-        assertEquals(2, resultado.size());
+        // Verifica os itens usando o getContent() da página
+        assertEquals(2, resultado.getContent().size());
+        verify(tutorRepository).findByAtivoTrue(pageable);
     }
 
     @Test
-    void deveRetornarListaVaziaQuandoNaoHaTutores() {
-        when(tutorRepository.findAll()).thenReturn(List.of());
+    void deveRetornarPaginaVaziaQuandoNaoHaTutoresAtivos() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Tutor> paginaVazia = new PageImpl<>(List.of());
 
-        List<TutorResponseDTO> resultado = tutorService.listarTodos();
+        when(tutorRepository.findByAtivoTrue(pageable)).thenReturn(paginaVazia);
+
+        Page<TutorResponseDTO> resultado = tutorService.listarTodos(pageable);
 
         assertTrue(resultado.isEmpty());
     }
@@ -159,15 +171,22 @@ class TutorServiceTest {
     }
 
     @Test
-    void deveDeletarTutorComSucesso() {
+    void deveInativarTutorComSucesso() {
         Tutor tutor = new Tutor();
         tutor.setId(1L);
+        tutor.setAtivo(true); // O Tutor começa ativo
 
         when(tutorRepository.findById(1L)).thenReturn(Optional.of(tutor));
+        when(tutorRepository.save(any(Tutor.class))).thenReturn(tutor);
 
         tutorService.deletar(1L);
 
-        verify(tutorRepository).delete(tutor);
+        // Garante que o status virou false
+        assertFalse(tutor.getAtivo());
+        // Garante que o sistema salvou a alteração em vez de deletar
+        verify(tutorRepository).save(tutor);
+        // Garante que o delete físico do Hibernate nunca foi chamado
+        verify(tutorRepository, never()).delete(any());
     }
 
     @Test
