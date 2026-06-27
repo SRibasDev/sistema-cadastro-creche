@@ -2,19 +2,18 @@ package com.particaolar.mundo.system.domain.service;
 
 import com.particaolar.mundo.system.domain.entity.Tutor;
 import com.particaolar.mundo.system.domain.repository.TutorRepository;
-import com.particaolar.mundo.system.dto.tutorDTO.TutorRequestDTO;
-import com.particaolar.mundo.system.dto.tutorDTO.TutorResponseDTO;
+import com.particaolar.mundo.system.dto.request.TutorRequestDTO;
+import com.particaolar.mundo.system.dto.response.TutorResponseDTO;
 import com.particaolar.mundo.system.exception.TutorCpfAlreadyExistsException;
 import com.particaolar.mundo.system.exception.TutorNotFoundException;
 import com.particaolar.mundo.system.exception.TutorPhoneNumberAlreadyExistsException;
 import com.particaolar.mundo.system.mapper.TutorMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -38,11 +37,9 @@ public class TutorService {
     }
 
     @Transactional(readOnly = true)
-    public List<TutorResponseDTO> listarTodos() {
-        return tutorRepository.findAll()
-                .stream()
-                .map(tutorMapper::toResponseDTO)
-                .toList();
+    public Page <TutorResponseDTO> listarTodos(Pageable pageable) {
+        Page<Tutor> tutoresPage = tutorRepository.findByAtivoTrue(pageable);
+        return tutoresPage.map(tutor -> tutorMapper.toResponseDTO(tutor));
     }
 
     @Transactional(readOnly = true)
@@ -55,19 +52,34 @@ public class TutorService {
 
 
     @Transactional
-    public TutorResponseDTO atualizar(TutorRequestDTO requestDTO, Long tutorId){
+    public TutorResponseDTO atualizar(TutorRequestDTO requestDTO, Long tutorId) {
         Tutor tutor = tutorRepository.findById(tutorId)
-                .orElseThrow(()-> new TutorNotFoundException(tutorId));
-        tutorMapper.updateEntityFromDTO(requestDTO,tutor);
-        Tutor tutorAtualizado = tutorRepository.save(tutor);
-        return tutorMapper.toResponseDTO(tutorAtualizado);
+                .orElseThrow(() -> new TutorNotFoundException(tutorId));
+
+        if (!tutor.getCpf().equals(requestDTO.cpf()) &&
+                tutorRepository.existsByCpf(requestDTO.cpf())) {
+            throw new TutorCpfAlreadyExistsException(requestDTO.cpf());
+        }
+
+        if (!tutor.getTelefone().equals(requestDTO.telefone()) &&
+                tutorRepository.existsByTelefone(requestDTO.telefone())) {
+            throw new TutorPhoneNumberAlreadyExistsException(requestDTO.telefone());
+        }
+
+        tutorMapper.updateEntityFromDTO(requestDTO, tutor);
+        log.info("Tutor {} atualizado", tutorId);
+        return tutorMapper.toResponseDTO(tutor);
     }
 
     @Transactional
-    public void deletar(Long tutorId){
-        Tutor tutor = tutorRepository.findById(tutorId)
-                .orElseThrow(()-> new TutorNotFoundException(tutorId));
-        tutorRepository.delete(tutor);
+    public void deletar(Long id) {
+        Tutor tutor = tutorRepository.findById(id)
+                .orElseThrow(() -> new TutorNotFoundException(id));
+        tutor.setAtivo(false);
+        tutorRepository.save(tutor);
+        log.info("Tutor deletado: id={}", id);
+
     }
+
 }
 
