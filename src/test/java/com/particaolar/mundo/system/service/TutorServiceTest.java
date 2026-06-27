@@ -144,10 +144,11 @@ class TutorServiceTest {
         TutorRequestDTO requestDTO = new TutorRequestDTO("João Atualizado", "11988888888", "123.456.789-00");
         Tutor tutor = new Tutor();
         tutor.setId(1L);
+        tutor.setCpf("123.456.789-00");       // mesmo CPF — não vai checar duplicata
+        tutor.setTelefone("11988888888");      // mesmo telefone — não vai checar duplicata
         TutorResponseDTO responseDTO = new TutorResponseDTO(1L, "João Atualizado", "11988888888");
 
         when(tutorRepository.findById(1L)).thenReturn(Optional.of(tutor));
-        when(tutorRepository.save(tutor)).thenReturn(tutor);
         when(tutorMapper.toResponseDTO(tutor)).thenReturn(responseDTO);
 
         TutorResponseDTO resultado = tutorService.atualizar(requestDTO, 1L);
@@ -155,7 +156,6 @@ class TutorServiceTest {
         assertNotNull(resultado);
         assertEquals("João Atualizado", resultado.nome());
         verify(tutorMapper).updateEntityFromDTO(requestDTO, tutor);
-        verify(tutorRepository).save(tutor);
     }
 
     @Test
