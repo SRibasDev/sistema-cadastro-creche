@@ -1,8 +1,8 @@
 package com.particaolar.mundo.system.controller;
 
 import com.particaolar.mundo.system.domain.service.HospedagemService;
-import com.particaolar.mundo.system.dto.hospedagemDTO.HospedagemRequestDTO;
-import com.particaolar.mundo.system.dto.hospedagemDTO.HospedagemResponseDTO;
+import com.particaolar.mundo.system.dto.request.HospedagemRequestDTO;
+import com.particaolar.mundo.system.dto.response.HospedagemResponseDTO;
 import com.particaolar.mundo.system.enums.StatusHospedagem;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/hospedagens")
+@RequestMapping("/api/hospedagens")
 @RequiredArgsConstructor
 public class HospedagemController {
 

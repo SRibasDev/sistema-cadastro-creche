@@ -32,15 +32,6 @@ public class Hospedagem {
     @Column(nullable = false, length = 20)
     private StatusHospedagem status;
 
-    @PrePersist
-    private void prePersist() {
-        if (this.status == null) {
-            this.status = StatusHospedagem.AGENDADA;
-        }
-        this.criadoEm = LocalDateTime.now();
-        this.atualizadoEm = LocalDateTime.now();
-    }
-
     @Column(length = 200)
     private String observacoes;
 
@@ -51,9 +42,17 @@ public class Hospedagem {
     private LocalDateTime atualizadoEm;
 
 
-
     @PreUpdate
     private void preUpdate() {
+        this.atualizadoEm = LocalDateTime.now();
+    }
+
+    @PrePersist
+    private void prePersist() {
+        if (this.status == null) {
+            this.status = StatusHospedagem.AGENDADA;
+        }
+        this.criadoEm = LocalDateTime.now();
         this.atualizadoEm = LocalDateTime.now();
     }
 }

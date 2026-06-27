@@ -1,4 +1,4 @@
-package com.particaolar.mundo.system.dto.hospedagemDTO;
+package com.particaolar.mundo.system.dto.response;
 
 import com.particaolar.mundo.system.enums.StatusHospedagem;
 import java.time.LocalDate;

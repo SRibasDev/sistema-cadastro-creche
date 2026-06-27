@@ -1,8 +1,8 @@
 package com.particaolar.mundo.system.mapper;
 
 import com.particaolar.mundo.system.domain.entity.Hospedagem;
-import com.particaolar.mundo.system.dto.hospedagemDTO.HospedagemRequestDTO;
-import com.particaolar.mundo.system.dto.hospedagemDTO.HospedagemResponseDTO;
+import com.particaolar.mundo.system.dto.request.HospedagemRequestDTO;
+import com.particaolar.mundo.system.dto.response.HospedagemResponseDTO;
 import org.springframework.stereotype.Component;
 
 @Component

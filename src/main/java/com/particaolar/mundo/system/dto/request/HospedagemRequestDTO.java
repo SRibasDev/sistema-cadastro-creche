@@ -1,4 +1,4 @@
-package com.particaolar.mundo.system.dto.hospedagemDTO;
+package com.particaolar.mundo.system.dto.request;
 
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.FutureOrPresent;
