@@ -33,6 +33,9 @@ public class Tutor {
     @OneToMany(mappedBy = "tutor", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private List<Pet> pets;
 
+    @Column(name = "ativo")
+    private Boolean ativo = true;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime criadoEm;
 

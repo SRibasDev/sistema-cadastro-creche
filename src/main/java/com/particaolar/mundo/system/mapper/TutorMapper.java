@@ -1,8 +1,8 @@
 package com.particaolar.mundo.system.mapper;
 
 import com.particaolar.mundo.system.domain.entity.Tutor;
-import com.particaolar.mundo.system.dto.tutorDTO.TutorRequestDTO;
-import com.particaolar.mundo.system.dto.tutorDTO.TutorResponseDTO;
+import com.particaolar.mundo.system.dto.request.TutorRequestDTO;
+import com.particaolar.mundo.system.dto.response.TutorResponseDTO;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.stereotype.Component;
 
