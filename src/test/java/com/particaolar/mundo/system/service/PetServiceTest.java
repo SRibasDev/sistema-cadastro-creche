@@ -5,8 +5,8 @@ import com.particaolar.mundo.system.domain.entity.Tutor;
 import com.particaolar.mundo.system.domain.repository.PetRepository;
 import com.particaolar.mundo.system.domain.repository.TutorRepository;
 import com.particaolar.mundo.system.domain.service.PetService;
-import com.particaolar.mundo.system.dto.petDTO.PetRequestDTO;
-import com.particaolar.mundo.system.dto.petDTO.PetResponseDTO;
+import com.particaolar.mundo.system.dto.request.PetRequestDTO;
+import com.particaolar.mundo.system.dto.response.PetResponseDTO;
 import com.particaolar.mundo.system.exception.PetNotFoundException;
 import com.particaolar.mundo.system.exception.TutorNotFoundException;
 import com.particaolar.mundo.system.mapper.PetMapper;
@@ -15,6 +15,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -57,7 +61,7 @@ class PetServiceTest {
 
         assertNotNull(resultado);
         assertEquals("Rex", resultado.nome());
-        verify(petRepository).save(pet); // confirma que o save foi chamado
+        verify(petRepository).save(pet);
     }
 
     @Test
@@ -70,27 +74,33 @@ class PetServiceTest {
         assertThrows(TutorNotFoundException.class,
                 () -> petService.salvar(requestDTO, tutorId));
 
-        verify(petRepository, never()).save(any()); // confirma que não tentou salvar
+        verify(petRepository, never()).save(any());
     }
 
     @Test
-    void deveListarTodosOsPets() {
-        List<Pet> listaPets = List.of(new Pet(), new Pet());
-        when(petRepository.findAll()).thenReturn(listaPets);
-        when(petMapper.toResponseDTO(any(Pet.class))).thenReturn(
-                new PetResponseDTO(1L, "Rex", "Labrador", LocalDate.of(2020, 1, 1), 1L)
-        );
+    void deveListarTodosOsPetsAtivosPaginados() {
+        Pageable pageable = PageRequest.of(0, 10);
+        List<Pet> pets = List.of(new Pet(), new Pet());
+        Page<Pet> paginaDePets = new PageImpl<>(pets);
+        PetResponseDTO responseDTO = new PetResponseDTO(1L, "Rex", "Labrador", LocalDate.now(), 1L);
 
-        List<PetResponseDTO> resultado = petService.listarTodos();
+        when(petRepository.findByAtivoTrue(pageable)).thenReturn(paginaDePets);
+        when(petMapper.toResponseDTO(any(Pet.class))).thenReturn(responseDTO);
 
-        assertEquals(2, resultado.size());
+        Page<PetResponseDTO> resultado = petService.listarTodos(pageable);
+
+        assertEquals(2, resultado.getContent().size());
+        verify(petRepository).findByAtivoTrue(pageable);
     }
 
     @Test
-    void deveRetornarListaVaziaQuandoNaoHaPets() {
-        when(petRepository.findAll()).thenReturn(List.of());
+    void deveRetornarPaginaVaziaQuandoNaoHaPetsAtivos() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Pet> paginaVazia = new PageImpl<>(List.of());
 
-        List<PetResponseDTO> resultado = petService.listarTodos();
+        when(petRepository.findByAtivoTrue(pageable)).thenReturn(paginaVazia);
+
+        Page<PetResponseDTO> resultado = petService.listarTodos(pageable);
 
         assertTrue(resultado.isEmpty());
     }
@@ -119,13 +129,19 @@ class PetServiceTest {
     }
 
     @Test
-    void deveDeletarPetComSucesso() {
+    void deveInativarPetComSucesso() {
         Pet pet = new Pet();
+        pet.setId(1L);
+        pet.setAtivo(true); // O Pet começa ativo
+
         when(petRepository.findById(1L)).thenReturn(Optional.of(pet));
+        when(petRepository.save(any(Pet.class))).thenReturn(pet);
 
         petService.deletar(1L);
 
-        verify(petRepository).delete(pet); // confirma que deletou
+        assertFalse(pet.getAtivo());
+        verify(petRepository).save(pet);
+        verify(petRepository, never()).delete(any());
     }
 
     @Test
@@ -135,6 +151,6 @@ class PetServiceTest {
         assertThrows(PetNotFoundException.class,
                 () -> petService.deletar(99L));
 
-        verify(petRepository, never()).delete(any()); // confirma que não tentou deletar
+        verify(petRepository, never()).save(any());
     }
 }
