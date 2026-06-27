@@ -1,8 +1,8 @@
 package com.particaolar.mundo.system.mapper;
 
 import com.particaolar.mundo.system.domain.entity.Pet;
-import com.particaolar.mundo.system.dto.petDTO.PetRequestDTO;
-import com.particaolar.mundo.system.dto.petDTO.PetResponseDTO;
+import com.particaolar.mundo.system.dto.request.PetRequestDTO;
+import com.particaolar.mundo.system.dto.response.PetResponseDTO;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.stereotype.Component;
 
