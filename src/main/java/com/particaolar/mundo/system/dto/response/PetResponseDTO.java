@@ -1,4 +1,4 @@
-package com.particaolar.mundo.system.dto.petDTO;
+package com.particaolar.mundo.system.dto.response;
 
 import java.time.LocalDate;
 

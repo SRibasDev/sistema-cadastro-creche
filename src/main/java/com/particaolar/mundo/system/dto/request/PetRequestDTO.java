@@ -1,4 +1,4 @@
-package com.particaolar.mundo.system.dto.petDTO;
+package com.particaolar.mundo.system.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
