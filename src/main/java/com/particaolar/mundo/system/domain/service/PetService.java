@@ -4,13 +4,15 @@ import com.particaolar.mundo.system.domain.entity.Pet;
 import com.particaolar.mundo.system.domain.entity.Tutor;
 import com.particaolar.mundo.system.domain.repository.PetRepository;
 import com.particaolar.mundo.system.domain.repository.TutorRepository;
-import com.particaolar.mundo.system.dto.petDTO.PetRequestDTO;
-import com.particaolar.mundo.system.dto.petDTO.PetResponseDTO;
+import com.particaolar.mundo.system.dto.request.PetRequestDTO;
+import com.particaolar.mundo.system.dto.response.PetResponseDTO;
 import com.particaolar.mundo.system.exception.PetNotFoundException;
 import com.particaolar.mundo.system.exception.TutorNotFoundException;
 import com.particaolar.mundo.system.mapper.PetMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
@@ -36,11 +38,9 @@ public class PetService {
     }
 
     @Transactional (readOnly = true)
-    public List<PetResponseDTO> listarTodos (){
-        List<Pet> pets = petRepository.findAll();
-        return pets.stream()
-                .map(petMapper::toResponseDTO)
-                .toList();
+    public Page<PetResponseDTO> listarTodos (Pageable pageable){
+        Page<Pet> petsPage = petRepository.findByAtivoTrue(pageable);
+        return petsPage.map(pet -> petMapper.toResponseDTO(pet));
     }
 
     @Transactional (readOnly = true)
@@ -73,7 +73,8 @@ public class PetService {
     public void deletar(Long id){
         Pet pet = petRepository.findById(id)
                 .orElseThrow(() -> new PetNotFoundException(id));
-        petRepository.delete(pet);
+        pet.setAtivo(false);
+        petRepository.save(pet);
         log.info("Pet deletado: id={}", id);
     }
 }
