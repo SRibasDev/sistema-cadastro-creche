@@ -21,10 +21,13 @@ API REST desenvolvida em Java com Spring Boot para gerenciar o dia a dia de uma 
 - Spring Boot 3.4.1
 - Spring Security + JWT (JJWT 0.12.3)
 - Spring Data JPA + Hibernate
+- Flyway (migrações de banco)
 - MySQL 8
+- H2 (banco em memória para testes)
 - Docker e Docker Compose
 - Lombok
 - Springdoc OpenAPI (Swagger)
+- Actuator + Prometheus
 - JUnit 5 + Mockito
 
 ---
@@ -46,44 +49,78 @@ cd sistema-cadastro-creche
 
 ### 2. Crie o arquivo `.env` na raiz do projeto
 
+Copie o `.env.example` como modelo. O `JWT_SECRET` precisa ter **no mínimo 32 caracteres** (256 bits):
+
 ```env
+# MySQL (usado pelo docker-compose)
+MYSQL_ROOT_PASSWORD=sua_senha_root
+MYSQL_DATABASE=creche_pet_db
+MYSQL_USER=app_user
+MYSQL_PASSWORD=sua_senha_aqui
+
+# Conexão local (modo desenvolvimento)
+DB_URL=jdbc:mysql://localhost:3306/creche_pet_db
+DB_USERNAME=app_user
 DB_PASSWORD=sua_senha_aqui
+
+# JWT
 JWT_SECRET=uma_chave_secreta_com_pelo_menos_32_caracteres
+JWT_EXPIRATION=3600000
+
+# Servidor / ferramentas
+SERVER_PORT=8080
+SWAGGER_ENABLED=true
 ```
 
-### 3. Suba o banco de dados
+### 3. Suba a aplicação + banco (Docker)
+
+```bash
+docker-compose up --build
+```
+
+O compose sobe o banco MySQL (com healthcheck) e a API. As migrações do banco (Flyway) são aplicadas automaticamente na subida.
+
+### 4. Rodando em desenvolvimento (IntelliJ)
+
+Suba apenas o banco, se preferir:
 
 ```bash
 docker-compose up db -d
 ```
 
-Aguarde uns 15 segundos antes de iniciar a aplicação.
-
-### 4. Configure as variáveis no IntelliJ
-
-Vá em `Run > Edit Configurations > SystemApplication > Environment Variables` e adicione:
+Depois vá em `Run > Edit Configurations > SystemApplication > Environment Variables` e configure:
 
 ```
 DB_URL=jdbc:mysql://localhost:3306/creche_pet_db
-DB_USERNAME=root
+DB_USERNAME=app_user
 DB_PASSWORD=sua_senha_aqui
-JWT_SECRET=sua_chave_aqui
-JWT_EXPIRATION=86400000
+JWT_SECRET=uma_chave_secreta_com_pelo_menos_32_caracteres
+JWT_EXPIRATION=3600000
+SERVER_PORT=8080
+SWAGGER_ENABLED=true
 ```
 
 ### 5. Rode a aplicação
 
 Execute a classe `SystemApplication.java` pelo IntelliJ.
 
-A API estará disponível em `http://localhost:8080`
-
-A documentação Swagger estará em `http://localhost:8080/swagger-ui/index.html`
+- API: `http://localhost:8080`
+- Swagger: `http://localhost:8080/swagger-ui/index.html`
+- Interface de testes (UI estática): `http://localhost:8080/`
+- Health check: `http://localhost:8080/actuator/health` (público)
 
 ---
 
 ## Autenticação
 
-Todos os endpoints são protegidos. Primeiro faça login para receber o token:
+Todos os endpoints são protegidos. Primeiro faça login para receber o token.
+
+No primeiro boot, o `DataSeeder` cria dois usuários padrão:
+
+- `admin@creche.com` / `admin123` — perfil **ADMIN**
+- `func@creche.com` / `func123` — perfil **FUNCIONARIO**
+
+> Em ambiente real, remova o `DataSeeder` ou troque as senhas padrão.
 
 ```
 POST /api/auth/login
@@ -92,7 +129,7 @@ POST /api/auth/login
 ```json
 {
   "email": "admin@creche.com",
-  "senha": "suasenha"
+  "senha": "admin123"
 }
 ```
 
@@ -111,6 +148,23 @@ Use o token nas requisições seguintes no header:
 ```
 Authorization: Bearer eyJ...
 ```
+
+### Cadastrar novo usuário
+
+```
+POST /api/auth/register
+```
+
+```json
+{
+  "nome": "Novo Funcionário",
+  "email": "novo@creche.com",
+  "senha": "senha_segura_123",
+  "role": "FUNCIONARIO"
+}
+```
+
+Resposta: `201 Created`. Se o e-mail já estiver em uso, retorna `409 Conflict`. A senha deve ter no mínimo 8 caracteres.
 
 ### Permissões por perfil
 
@@ -131,6 +185,7 @@ Authorization: Bearer eyJ...
 | Metodo | Endpoint | Descricao |
 |--------|----------|-----------|
 | POST | `/api/auth/login` | Fazer login e receber o token |
+| POST | `/api/auth/register` | Cadastrar novo usuário (ADMIN ou FUNCIONARIO) |
 
 ### Tutores
 
@@ -158,12 +213,16 @@ Authorization: Bearer eyJ...
 | Metodo | Endpoint | Descricao | Status |
 |--------|----------|-----------|--------|
 | POST | `/api/hospedagens` | Criar hospedagem | 201 |
-| GET | `/api/hospedagens` | Listar todas as hospedagens | 200 |
+| GET | `/api/hospedagens` | Listar hospedagens (paginado) | 200 |
 | GET | `/api/hospedagens/{id}` | Buscar hospedagem por ID | 200 |
 | GET | `/api/hospedagens/pet/{petId}` | Listar hospedagens de um pet | 200 |
 | PUT | `/api/hospedagens/{id}` | Atualizar dados da hospedagem | 200 |
 | PATCH | `/api/hospedagens/{id}/status` | Atualizar status da hospedagem | 200 |
 | DELETE | `/api/hospedagens/{id}` | Cancelar hospedagem | 204 |
+
+> **Paginação:** `GET /api/tutores`, `/api/pets` e `/api/hospedagens` aceitam `?page=0&size=10&sort=id,asc`. O tamanho máximo de página é **100**.
+>
+> **Status da hospedagem:** além dos dados, o status também é validado — uma hospedagem `CONCLUIDA` ou `CANCELADA` não pode ser alterada, e só são permitidas transições válidas (`AGENDADA` → `EM_ANDAMENTO`/`CANCELADA`, `EM_ANDAMENTO` → `CONCLUIDA`/`CANCELADA`).
 
 ---
 
@@ -249,7 +308,7 @@ O fluxo é sempre unidirecional. O controller não acessa o repository diretamen
 
 ```
 src/main/java/com/particaolar/mundo/system/
-├── config/              # SecurityConfig, OpenApiConfig
+├── config/              # SecurityConfig, OpenApiConfig, DataSeeder
 ├── controller/          # PetController, TutorController, HospedagemController
 ├── domain/
 │   ├── entity/          # Pet, Tutor, Hospedagem
@@ -264,12 +323,18 @@ src/main/java/com/particaolar/mundo/system/
 ├── mapper/              # PetMapper, TutorMapper, HospedagemMapper
 └── security/            # JWT, filtros e autenticação
     ├── controller/      # AuthController
-    ├── dto/             # LoginRequestDTO, LoginResponseDTO
+    ├── dto/             # LoginRequestDTO, LoginResponseDTO, RegisterRequestDTO
     ├── entity/          # Usuario
     ├── filter/          # JwtAuthFilter
     ├── repository/      # UsuarioRepository
     └── service/         # JwtService, UsuarioService
 ```
+
+Além do código Java, o projeto também contém:
+
+- `src/main/resources/static/` — interface web estática (HTML/CSS/JS) servida em `/`
+- `src/main/resources/db/migration/` — migrações de banco do Flyway
+- `src/test/` — testes unitários (Mockito) e de integração de segurança (H2 + MockMvc)
 
 ---
 

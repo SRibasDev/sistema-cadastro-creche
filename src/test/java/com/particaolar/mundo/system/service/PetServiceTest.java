@@ -52,7 +52,7 @@ class PetServiceTest {
         petSalvo.setId(1L);
         PetResponseDTO responseDTO = new PetResponseDTO(1L, "Rex", "Labrador", LocalDate.of(2020, 1, 1), tutorId);
 
-        when(tutorRepository.findById(tutorId)).thenReturn(Optional.of(tutor));
+        when(tutorRepository.findByIdAndAtivoTrue(tutorId)).thenReturn(Optional.of(tutor));
         when(petMapper.toEntity(requestDTO)).thenReturn(pet);
         when(petRepository.save(pet)).thenReturn(petSalvo);
         when(petMapper.toResponseDTO(petSalvo)).thenReturn(responseDTO);
@@ -69,7 +69,7 @@ class PetServiceTest {
         Long tutorId = 99L;
         PetRequestDTO requestDTO = new PetRequestDTO("Rex", "Labrador", LocalDate.of(2020, 1, 1));
 
-        when(tutorRepository.findById(tutorId)).thenReturn(Optional.empty());
+        when(tutorRepository.findByIdAndAtivoTrue(tutorId)).thenReturn(Optional.empty());
 
         assertThrows(TutorNotFoundException.class,
                 () -> petService.salvar(requestDTO, tutorId));
@@ -111,7 +111,7 @@ class PetServiceTest {
         pet.setId(1L);
         PetResponseDTO responseDTO = new PetResponseDTO(1L, "Rex", "Labrador", LocalDate.of(2020, 1, 1), 1L);
 
-        when(petRepository.findById(1L)).thenReturn(Optional.of(pet));
+        when(petRepository.findByIdAndAtivoTrue(1L)).thenReturn(Optional.of(pet));
         when(petMapper.toResponseDTO(pet)).thenReturn(responseDTO);
 
         PetResponseDTO resultado = petService.buscarPetPorPetId(1L);
@@ -122,7 +122,7 @@ class PetServiceTest {
 
     @Test
     void deveLancarExcecaoQuandoPetNaoEncontrado() {
-        when(petRepository.findById(99L)).thenReturn(Optional.empty());
+        when(petRepository.findByIdAndAtivoTrue(99L)).thenReturn(Optional.empty());
 
         assertThrows(PetNotFoundException.class,
                 () -> petService.buscarPetPorPetId(99L));
@@ -132,9 +132,9 @@ class PetServiceTest {
     void deveInativarPetComSucesso() {
         Pet pet = new Pet();
         pet.setId(1L);
-        pet.setAtivo(true); // O Pet começa ativo
+        pet.setAtivo(true);
 
-        when(petRepository.findById(1L)).thenReturn(Optional.of(pet));
+        when(petRepository.findByIdAndAtivoTrue(1L)).thenReturn(Optional.of(pet));
         when(petRepository.save(any(Pet.class))).thenReturn(pet);
 
         petService.deletar(1L);
@@ -146,7 +146,7 @@ class PetServiceTest {
 
     @Test
     void deveLancarExcecaoAoDeletarPetInexistente() {
-        when(petRepository.findById(99L)).thenReturn(Optional.empty());
+        when(petRepository.findByIdAndAtivoTrue(99L)).thenReturn(Optional.empty());
 
         assertThrows(PetNotFoundException.class,
                 () -> petService.deletar(99L));

@@ -6,6 +6,9 @@ import com.particaolar.mundo.system.dto.response.HospedagemResponseDTO;
 import com.particaolar.mundo.system.enums.StatusHospedagem;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,8 +29,9 @@ public class HospedagemController {
     }
 
     @GetMapping
-    public ResponseEntity<List<HospedagemResponseDTO>> listarTodas() {
-        return ResponseEntity.ok(hospedagemService.listarTodas());
+    public ResponseEntity<Page<HospedagemResponseDTO>> listarTodas(
+            @PageableDefault(size = 10, page = 0, sort = "dataEntrada") Pageable pageable) {
+        return ResponseEntity.ok(hospedagemService.listarTodas(pageable));
     }
 
     @GetMapping("/{id}")

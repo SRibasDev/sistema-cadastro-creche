@@ -17,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
-
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -27,8 +26,8 @@ public class PetService {
     private final PetMapper petMapper;
 
     @Transactional
-    public PetResponseDTO salvar(PetRequestDTO requestDTO, Long tutorId){
-        Tutor tutor = tutorRepository.findById(tutorId)
+    public PetResponseDTO salvar(PetRequestDTO requestDTO, Long tutorId) {
+        Tutor tutor = tutorRepository.findByIdAndAtivoTrue(tutorId)
                 .orElseThrow(() -> new TutorNotFoundException(tutorId));
         Pet pet = petMapper.toEntity(requestDTO);
         pet.setTutor(tutor);
@@ -37,15 +36,19 @@ public class PetService {
         return petMapper.toResponseDTO(petSalvo);
     }
 
-    @Transactional (readOnly = true)
-    public Page<PetResponseDTO> listarTodos (Pageable pageable){
+    @Transactional(readOnly = true)
+    public Page<PetResponseDTO> listarTodos(Pageable pageable) {
+        if (pageable.getPageSize() > 100) {
+            throw new IllegalArgumentException("Tamanho máximo de página é 100");
+        }
         Page<Pet> petsPage = petRepository.findByAtivoTrue(pageable);
         return petsPage.map(pet -> petMapper.toResponseDTO(pet));
     }
 
-    @Transactional (readOnly = true)
-    public PetResponseDTO buscarPetPorPetId(Long petId){
-        Pet pet = petRepository.findById(petId).orElseThrow(() -> new PetNotFoundException(petId));
+    @Transactional(readOnly = true)
+    public PetResponseDTO buscarPetPorPetId(Long petId) {
+        Pet pet = petRepository.findByIdAndAtivoTrue(petId)
+                .orElseThrow(() -> new PetNotFoundException(petId));
         return petMapper.toResponseDTO(pet);
     }
 
@@ -54,27 +57,27 @@ public class PetService {
         if (!tutorRepository.existsById(tutorId)) {
             throw new TutorNotFoundException(tutorId);
         }
-        return petRepository.findByTutorId(tutorId)
+        return petRepository.findByTutorIdAndAtivoTrue(tutorId)
                 .stream()
                 .map(petMapper::toResponseDTO)
                 .toList();
     }
 
     @Transactional
-    public PetResponseDTO atualizar(PetRequestDTO requestDTO, Long petId){
-        Pet pet = petRepository.findById(petId)
+    public PetResponseDTO atualizar(PetRequestDTO requestDTO, Long petId) {
+        Pet pet = petRepository.findByIdAndAtivoTrue(petId)
                 .orElseThrow(() -> new PetNotFoundException(petId));
-        petMapper.updateEntityFromDTO(requestDTO,pet);
+        petMapper.updateEntityFromDTO(requestDTO, pet);
         Pet petAtualizado = petRepository.save(pet);
         return petMapper.toResponseDTO(petAtualizado);
     }
 
     @Transactional
-    public void deletar(Long id){
-        Pet pet = petRepository.findById(id)
+    public void deletar(Long id) {
+        Pet pet = petRepository.findByIdAndAtivoTrue(id)
                 .orElseThrow(() -> new PetNotFoundException(id));
         pet.setAtivo(false);
         petRepository.save(pet);
-        log.info("Pet deletado: id={}", id);
+        log.info("Pet desativado: id={}", id);
     }
 }

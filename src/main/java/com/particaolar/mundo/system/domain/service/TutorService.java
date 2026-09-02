@@ -25,10 +25,10 @@ public class TutorService {
     @Transactional
     public TutorResponseDTO salvarTutor(TutorRequestDTO requestDTO) {
         if (tutorRepository.existsByCpf(requestDTO.cpf())) {
-            throw new TutorCpfAlreadyExistsException(requestDTO.cpf());
+            throw new TutorCpfAlreadyExistsException();
         }
         if (tutorRepository.existsByTelefone(requestDTO.telefone())) {
-            throw new TutorPhoneNumberAlreadyExistsException(requestDTO.telefone());
+            throw new TutorPhoneNumberAlreadyExistsException();
         }
         log.info("Tutor validado com sucesso: {}", requestDTO.nome());
         Tutor tutor = tutorMapper.toEntity(requestDTO);
@@ -37,33 +37,35 @@ public class TutorService {
     }
 
     @Transactional(readOnly = true)
-    public Page <TutorResponseDTO> listarTodos(Pageable pageable) {
+    public Page<TutorResponseDTO> listarTodos(Pageable pageable) {
+        // Enforce max page size
+        if (pageable.getPageSize() > 100) {
+            throw new IllegalArgumentException("Tamanho máximo de página é 100");
+        }
         Page<Tutor> tutoresPage = tutorRepository.findByAtivoTrue(pageable);
         return tutoresPage.map(tutor -> tutorMapper.toResponseDTO(tutor));
     }
 
     @Transactional(readOnly = true)
-    public TutorResponseDTO buscarPorId (Long tutorId) {
-         Tutor tutor = tutorRepository.findById(tutorId)
+    public TutorResponseDTO buscarPorId(Long tutorId) {
+        Tutor tutor = tutorRepository.findByIdAndAtivoTrue(tutorId)
                 .orElseThrow(() -> new TutorNotFoundException(tutorId));
-         TutorResponseDTO responseDTO = tutorMapper.toResponseDTO(tutor);
-        return responseDTO;
+        return tutorMapper.toResponseDTO(tutor);
     }
-
 
     @Transactional
     public TutorResponseDTO atualizar(TutorRequestDTO requestDTO, Long tutorId) {
-        Tutor tutor = tutorRepository.findById(tutorId)
+        Tutor tutor = tutorRepository.findByIdAndAtivoTrue(tutorId)
                 .orElseThrow(() -> new TutorNotFoundException(tutorId));
 
         if (!tutor.getCpf().equals(requestDTO.cpf()) &&
                 tutorRepository.existsByCpf(requestDTO.cpf())) {
-            throw new TutorCpfAlreadyExistsException(requestDTO.cpf());
+            throw new TutorCpfAlreadyExistsException();
         }
 
         if (!tutor.getTelefone().equals(requestDTO.telefone()) &&
                 tutorRepository.existsByTelefone(requestDTO.telefone())) {
-            throw new TutorPhoneNumberAlreadyExistsException(requestDTO.telefone());
+            throw new TutorPhoneNumberAlreadyExistsException();
         }
 
         tutorMapper.updateEntityFromDTO(requestDTO, tutor);
@@ -73,12 +75,11 @@ public class TutorService {
 
     @Transactional
     public void deletar(Long id) {
-        Tutor tutor = tutorRepository.findById(id)
+        Tutor tutor = tutorRepository.findByIdAndAtivoTrue(id)
                 .orElseThrow(() -> new TutorNotFoundException(id));
         tutor.setAtivo(false);
         tutorRepository.save(tutor);
-        log.info("Tutor deletado: id={}", id);
-
+        log.info("Tutor desativado: id={}", id);
     }
 
 }

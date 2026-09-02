@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Creche Pet API</title>
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<header><h1>🐾 Creche Pet API</h1><div class="user-info" id="userInfo" style="display:none">
+👤 <span id="userName"></span> · <span id="userRole"></span>
+<button class="btn btn-danger btn-sm" style="margin-left:12px" onclick="logout()">Sair</button>
+<div id="loginPanel" class="login-box">
+<h2>🔐 Login</h2>
+<div class="form-group"><label>Email</label><input type="email" id="loginEmail" value="admin@creche.com"></div>
+<div class="form-group"><label>Senha</label><input type="password" id="loginSenha" value="admin123"></div>
+<button class="btn btn-primary" onclick="login()">Entrar</button>
+<p style="text-align:center;margin-top:16px;font-size:12px;color:var(--muted)">admin@creche.com / admin123<br>func@creche.com / func123</p></div>
+
+<div id="dashboard" style="display:none">
+<div class="tabs"><div class="tab active" data-tab="tutores">Tutores</div><div class="tab" data-tab="pets">Pets</div><div class="tab" data-tab="hospedagens">Hospedagens</div></div>
+
+<div id="panel-tutores" class="panel active">
+<div class="toolbar"><h3>Tutores</h3><button class="btn btn-success btn-sm" onclick="openTutorModal()">+ Novo</button></div>
+<table><thead><tr><th>ID</th><th>Nome</th><th>Telefone</th><th>Ações</th></tr></thead><tbody id="tutoresTable"></tbody></table>
+<div class="toolbar" style="margin-top:12px"><button class="btn btn-sm" onclick="loadTutores(0)" id="tutPrev" disabled>←</button><span style="font-size:13px;color:var(--muted)" id="tutPage">Página 1</span><button class="btn btn-sm" onclick="loadTutores(1)" id="tutNext" disabled>→</button></div></div>
+
+<div id="panel-pets" class="panel">
+<div class="toolbar"><h3>Pets</h3><button class="btn btn-success btn-sm" onclick="openPetModal()">+ Novo</button></div>
+<table><thead><tr><th>ID</th><th>Nome</th><th>Raça</th><th>Nasc.</th><th>Tutor ID</th><th>Ações</th></tr></thead><tbody id="petsTable"></tbody></table>
+<div class="toolbar" style="margin-top:12px"><button class="btn btn-sm" onclick="loadPets(0)" id="petPrev" disabled>←</button><span style="font-size:13px;color:var(--muted)" id="petPage">Página 1</span><button class="btn btn-sm" onclick="loadPets(1)" id="petNext" disabled>→</button></div></div>
+
+<div id="panel-hospedagens" class="panel">
+<div class="toolbar"><h3>Hospedagens</h3><button class="btn btn-success btn-sm" onclick="openHospModal()">+ Nova</button></div>
+<table><thead><tr><th>ID</th><th>Pet</th><th>Tutor</th><th>Entrada</th><th>Saída</th><th>Status</th><th>Ações</th></tr></thead><tbody id="hospTable"></tbody></table>
+<div class="toolbar" style="margin-top:12px"><button class="btn btn-sm" onclick="loadHospedagens(0)" id="hospPrev" disabled>←</button><span style="font-size:13px;color:var(--muted)" id="hospPage">Página 1</span><button class="btn btn-sm" onclick="loadHospedagens(1)" id="hospNext" disabled>→</button></div></div>
+</div></main>
+
+<div id="modalOverlay" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal()"><div class="modal" id="modalContent"></div></div>
+<script src="js/app.js"></script>
+</body>
+</html>
+</div></header>
+<main>

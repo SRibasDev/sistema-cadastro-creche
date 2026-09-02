@@ -68,7 +68,6 @@ class TutorServiceTest {
         assertThrows(TutorCpfAlreadyExistsException.class,
                 () -> tutorService.salvarTutor(requestDTO));
 
-        // não chegou nem a checar telefone nem a salvar
         verify(tutorRepository, never()).existsByTelefone(any());
         verify(tutorRepository, never()).save(any());
     }
@@ -122,7 +121,7 @@ class TutorServiceTest {
         tutor.setId(1L);
         TutorResponseDTO responseDTO = new TutorResponseDTO(1L, "João", "11999999999");
 
-        when(tutorRepository.findById(1L)).thenReturn(Optional.of(tutor));
+        when(tutorRepository.findByIdAndAtivoTrue(1L)).thenReturn(Optional.of(tutor));
         when(tutorMapper.toResponseDTO(tutor)).thenReturn(responseDTO);
 
         TutorResponseDTO resultado = tutorService.buscarPorId(1L);
@@ -133,7 +132,7 @@ class TutorServiceTest {
 
     @Test
     void deveLancarExcecaoQuandoTutorNaoEncontrado() {
-        when(tutorRepository.findById(99L)).thenReturn(Optional.empty());
+        when(tutorRepository.findByIdAndAtivoTrue(99L)).thenReturn(Optional.empty());
 
         assertThrows(TutorNotFoundException.class,
                 () -> tutorService.buscarPorId(99L));
@@ -148,7 +147,7 @@ class TutorServiceTest {
         tutor.setTelefone("11988888888");      // mesmo telefone — não vai checar duplicata
         TutorResponseDTO responseDTO = new TutorResponseDTO(1L, "João Atualizado", "11988888888");
 
-        when(tutorRepository.findById(1L)).thenReturn(Optional.of(tutor));
+        when(tutorRepository.findByIdAndAtivoTrue(1L)).thenReturn(Optional.of(tutor));
         when(tutorMapper.toResponseDTO(tutor)).thenReturn(responseDTO);
 
         TutorResponseDTO resultado = tutorService.atualizar(requestDTO, 1L);
@@ -162,7 +161,7 @@ class TutorServiceTest {
     void deveLancarExcecaoAoAtualizarTutorInexistente() {
         TutorRequestDTO requestDTO = new TutorRequestDTO("João", "11999999999", "123.456.789-00");
 
-        when(tutorRepository.findById(99L)).thenReturn(Optional.empty());
+        when(tutorRepository.findByIdAndAtivoTrue(99L)).thenReturn(Optional.empty());
 
         assertThrows(TutorNotFoundException.class,
                 () -> tutorService.atualizar(requestDTO, 99L));
@@ -174,24 +173,21 @@ class TutorServiceTest {
     void deveInativarTutorComSucesso() {
         Tutor tutor = new Tutor();
         tutor.setId(1L);
-        tutor.setAtivo(true); // O Tutor começa ativo
+        tutor.setAtivo(true);
 
-        when(tutorRepository.findById(1L)).thenReturn(Optional.of(tutor));
+        when(tutorRepository.findByIdAndAtivoTrue(1L)).thenReturn(Optional.of(tutor));
         when(tutorRepository.save(any(Tutor.class))).thenReturn(tutor);
 
         tutorService.deletar(1L);
 
-        // Garante que o status virou false
         assertFalse(tutor.getAtivo());
-        // Garante que o sistema salvou a alteração em vez de deletar
         verify(tutorRepository).save(tutor);
-        // Garante que o delete físico do Hibernate nunca foi chamado
         verify(tutorRepository, never()).delete(any());
     }
 
     @Test
     void deveLancarExcecaoAoDeletarTutorInexistente() {
-        when(tutorRepository.findById(99L)).thenReturn(Optional.empty());
+        when(tutorRepository.findByIdAndAtivoTrue(99L)).thenReturn(Optional.empty());
 
         assertThrows(TutorNotFoundException.class,
                 () -> tutorService.deletar(99L));

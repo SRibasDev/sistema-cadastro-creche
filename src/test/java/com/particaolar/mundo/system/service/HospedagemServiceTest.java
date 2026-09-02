@@ -18,6 +18,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -63,7 +68,7 @@ class HospedagemServiceTest {
         Hospedagem hospedagem = new Hospedagem();
         Hospedagem hospedagemSalva = new Hospedagem();
 
-        when(petRepository.findById(1L)).thenReturn(Optional.of(pet));
+        when(petRepository.findByIdAndAtivoTrue(1L)).thenReturn(Optional.of(pet));
         when(hospedagemRepository.existsByPetIdAndStatusIn(eq(1L), any())).thenReturn(false);
         when(hospedagemMapper.toEntity(dto)).thenReturn(hospedagem);
         when(hospedagemRepository.save(hospedagem)).thenReturn(hospedagemSalva);
@@ -80,7 +85,7 @@ class HospedagemServiceTest {
     void deveLancarExcecaoQuandoPetNaoEncontradoAoSalvar() {
         HospedagemRequestDTO dto = new HospedagemRequestDTO(99L, entrada, saida, null);
 
-        when(petRepository.findById(99L)).thenReturn(Optional.empty());
+        when(petRepository.findByIdAndAtivoTrue(99L)).thenReturn(Optional.empty());
 
         assertThrows(PetNotFoundException.class,
                 () -> hospedagemService.salvar(dto));
@@ -95,7 +100,7 @@ class HospedagemServiceTest {
         HospedagemRequestDTO dto = new HospedagemRequestDTO(1L, entrada, saida, null);
         Pet pet = new Pet();
 
-        when(petRepository.findById(1L)).thenReturn(Optional.of(pet));
+        when(petRepository.findByIdAndAtivoTrue(1L)).thenReturn(Optional.of(pet));
         when(hospedagemRepository.existsByPetIdAndStatusIn(eq(1L), any())).thenReturn(true);
 
         assertThrows(PetJaHospedadoException.class,
@@ -105,22 +110,28 @@ class HospedagemServiceTest {
     }
 
     @Test
-    void deveListarTodasAsHospedagens() {
-        List<Hospedagem> hospedagens = List.of(new Hospedagem(), new Hospedagem());
+    void deveListarHospedagensComPaginacao() {
+        Pageable pageable = PageRequest.of(0, 10);
+        List<Hospedagem> hospedagens = List.of(new Hospedagem());
+        Page<Hospedagem> page = new PageImpl<>(hospedagens, pageable, 1);
 
-        when(hospedagemRepository.findAll()).thenReturn(hospedagens);
+        when(hospedagemRepository.findAll(pageable)).thenReturn(page);
         when(hospedagemMapper.toResponseDTO(any(Hospedagem.class))).thenReturn(responseDTO());
 
-        List<HospedagemResponseDTO> resultado = hospedagemService.listarTodas();
+        Page<HospedagemResponseDTO> resultado = hospedagemService.listarTodas(pageable);
 
-        assertEquals(2, resultado.size());
+        assertEquals(1, resultado.getContent().size());
+        verify(hospedagemRepository).findAll(pageable);
     }
 
     @Test
-    void deveRetornarListaVaziaQuandoNaoHaHospedagens() {
-        when(hospedagemRepository.findAll()).thenReturn(List.of());
+    void deveRetornarPaginaVaziaQuandoNaoHaHospedagens() {
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Hospedagem> paginaVazia = new PageImpl<>(List.of(), pageable, 0);
 
-        List<HospedagemResponseDTO> resultado = hospedagemService.listarTodas();
+        when(hospedagemRepository.findAll(pageable)).thenReturn(paginaVazia);
+
+        Page<HospedagemResponseDTO> resultado = hospedagemService.listarTodas(pageable);
 
         assertTrue(resultado.isEmpty());
     }
@@ -212,5 +223,68 @@ class HospedagemServiceTest {
 
         assertThrows(HospedagemNotFoundException.class,
                 () -> hospedagemService.cancelar(99L));
+    }
+
+    @Test
+    void deveLancarExcecaoAoCancelarHospedagemJaCancelada() {
+        Hospedagem hospedagem = new Hospedagem();
+        hospedagem.setStatus(StatusHospedagem.CANCELADA);
+
+        when(hospedagemRepository.findById(1L)).thenReturn(Optional.of(hospedagem));
+
+        assertThrows(IllegalStateException.class,
+                () -> hospedagemService.cancelar(1L));
+    }
+
+    @Test
+    void deveLancarExcecaoAoCancelarHospedagemConcluida() {
+        Hospedagem hospedagem = new Hospedagem();
+        hospedagem.setStatus(StatusHospedagem.CONCLUIDA);
+
+        when(hospedagemRepository.findById(1L)).thenReturn(Optional.of(hospedagem));
+
+        assertThrows(IllegalStateException.class,
+                () -> hospedagemService.cancelar(1L));
+    }
+
+    @Test
+    void deveLancarExcecaoEmTransicaoInvalidaDeStatus() {
+        Hospedagem hospedagem = new Hospedagem();
+        hospedagem.setStatus(StatusHospedagem.CONCLUIDA);
+
+        when(hospedagemRepository.findById(1L)).thenReturn(Optional.of(hospedagem));
+
+        assertThrows(IllegalStateException.class,
+                () -> hospedagemService.atualizarStatus(1L, StatusHospedagem.AGENDADA));
+    }
+
+    @Test
+    void deveLancarExcecaoAoAtualizarHospedagemCancelada() {
+        Hospedagem hospedagem = new Hospedagem();
+        hospedagem.setStatus(StatusHospedagem.CANCELADA);
+        HospedagemRequestDTO dto = new HospedagemRequestDTO(1L, entrada, saida, null);
+
+        when(hospedagemRepository.findById(1L)).thenReturn(Optional.of(hospedagem));
+
+        assertThrows(IllegalStateException.class,
+                () -> hospedagemService.atualizar(1L, dto));
+    }
+
+    @Test
+    void deveLancarExcecaoComDatasInvalidas() {
+        LocalDate entradaInvalida = LocalDate.of(2025, 7, 5);
+        LocalDate saidaInvalida = LocalDate.of(2025, 7, 1);
+        HospedagemRequestDTO dto = new HospedagemRequestDTO(1L, entradaInvalida, saidaInvalida, null);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> hospedagemService.salvar(dto));
+    }
+
+    @Test
+    void deveLancarExcecaoComPaginaMuitoGrande() {
+        Pageable pageable = PageRequest.of(0, 101);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> hospedagemService.listarTodas(pageable));
     }
 }
