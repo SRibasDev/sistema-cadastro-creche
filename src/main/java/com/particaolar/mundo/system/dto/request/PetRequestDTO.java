@@ -11,6 +11,10 @@ public record PetRequestDTO(
         String nome,
         @NotBlank(message = "Raça é obrigatório")
         String raca,
-        LocalDate dataNascimento
+        LocalDate dataNascimento,
+        @Size(max = 500, message = "Alertas deve ter no máximo 500 caracteres")
+        String alertas,
+        @Size(max = 500, message = "Observações deve ter no máximo 500 caracteres")
+        String observacoesGerais
 )
 {}

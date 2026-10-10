@@ -45,12 +45,12 @@ class PetServiceTest {
     @Test
     void deveSalvarPetComSucesso() {
         Long tutorId = 1L;
-        PetRequestDTO requestDTO = new PetRequestDTO("Rex", "Labrador", LocalDate.of(2020, 1, 1));
+        PetRequestDTO requestDTO = new PetRequestDTO("Rex", "Labrador", LocalDate.of(2020, 1, 1), null, null);
         Tutor tutor = new Tutor();
         Pet pet = new Pet();
         Pet petSalvo = new Pet();
         petSalvo.setId(1L);
-        PetResponseDTO responseDTO = new PetResponseDTO(1L, "Rex", "Labrador", LocalDate.of(2020, 1, 1), tutorId);
+        PetResponseDTO responseDTO = new PetResponseDTO(1L, "Rex", "Labrador", LocalDate.of(2020, 1, 1), tutorId, null, null);
 
         when(tutorRepository.findByIdAndAtivoTrue(tutorId)).thenReturn(Optional.of(tutor));
         when(petMapper.toEntity(requestDTO)).thenReturn(pet);
@@ -67,7 +67,7 @@ class PetServiceTest {
     @Test
     void deveLancarExcecaoQuandoTutorNaoEncontradoAoSalvar() {
         Long tutorId = 99L;
-        PetRequestDTO requestDTO = new PetRequestDTO("Rex", "Labrador", LocalDate.of(2020, 1, 1));
+        PetRequestDTO requestDTO = new PetRequestDTO("Rex", "Labrador", LocalDate.of(2020, 1, 1), null, null);
 
         when(tutorRepository.findByIdAndAtivoTrue(tutorId)).thenReturn(Optional.empty());
 
@@ -82,7 +82,7 @@ class PetServiceTest {
         Pageable pageable = PageRequest.of(0, 10);
         List<Pet> pets = List.of(new Pet(), new Pet());
         Page<Pet> paginaDePets = new PageImpl<>(pets);
-        PetResponseDTO responseDTO = new PetResponseDTO(1L, "Rex", "Labrador", LocalDate.now(), 1L);
+        PetResponseDTO responseDTO = new PetResponseDTO(1L, "Rex", "Labrador", LocalDate.now(), 1L, null, null);
 
         when(petRepository.findByAtivoTrue(pageable)).thenReturn(paginaDePets);
         when(petMapper.toResponseDTO(any(Pet.class))).thenReturn(responseDTO);
@@ -109,7 +109,7 @@ class PetServiceTest {
     void deveBuscarPetPorIdComSucesso() {
         Pet pet = new Pet();
         pet.setId(1L);
-        PetResponseDTO responseDTO = new PetResponseDTO(1L, "Rex", "Labrador", LocalDate.of(2020, 1, 1), 1L);
+        PetResponseDTO responseDTO = new PetResponseDTO(1L, "Rex", "Labrador", LocalDate.of(2020, 1, 1), 1L, null, null);
 
         when(petRepository.findByIdAndAtivoTrue(1L)).thenReturn(Optional.of(pet));
         when(petMapper.toResponseDTO(pet)).thenReturn(responseDTO);

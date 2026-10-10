@@ -14,6 +14,8 @@ public class PetMapper {
         petEntity.setNome(dto.nome());
         petEntity.setRaca(dto.raca());
         petEntity.setDataNascimento(dto.dataNascimento());
+        petEntity.setAlertas(dto.alertas());
+        petEntity.setObservacoesGerais(dto.observacoesGerais());
         return petEntity;
     }
 
@@ -23,13 +25,17 @@ public class PetMapper {
                 petEntity.getNome(),
                 petEntity.getRaca(),
                 petEntity.getDataNascimento(),
-                petEntity.getTutor().getId()
+                petEntity.getTutor().getId(),
+                petEntity.getAlertas(),
+                petEntity.getObservacoesGerais()
         );
     }
     public void updateEntityFromDTO(@NotNull PetRequestDTO dto, @NotNull Pet pet) {
         pet.setNome(dto.nome());
         pet.setRaca(dto.raca());
         pet.setDataNascimento(dto.dataNascimento());
+        pet.setAlertas(dto.alertas());
+        pet.setObservacoesGerais(dto.observacoesGerais());
     }
 }
 

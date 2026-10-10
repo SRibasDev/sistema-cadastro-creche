@@ -34,6 +34,17 @@ public class Pet {
     @OneToMany(mappedBy = "pet", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private List<Hospedagem> hospedagens;
 
+    /** Alertas (alergias, restrições, comportamento) — visíveis na recepção. */
+    @Column(length = 500)
+    private String alertas;
+
+    /** Observações gerais sobre o pet. */
+    @Column(name = "observacoes_gerais", length = 500)
+    private String observacoesGerais;
+
+    @OneToMany(mappedBy = "pet", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    private List<PetPertence> pertences;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime criadoEm;
 
