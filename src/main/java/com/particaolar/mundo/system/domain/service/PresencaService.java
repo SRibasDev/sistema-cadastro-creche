@@ -20,7 +20,8 @@ import java.util.List;
 /**
  * Presença do pet: o FUNCIONARIO marca entrada (EM_ANDAMENTO), saída
  * (CONCLUIDA) e falta (FALTOU). Nenhuma escrita em cadastros.
- * O hook de débito de pacote/saldo entra na Etapa 4 (marcarEntrada).
+ * Na entrada o saldo do pacote do pet é debitado automaticamente
+ * (PacoteService.debitarSaldo).
  * SaaS: validações receberão tenant_id no futuro.
  */
 @Service
@@ -30,6 +31,7 @@ public class PresencaService {
 
     private final ReservaRepository reservaRepository;
     private final ReservaMapper reservaMapper;
+    private final PacoteService pacoteService;
 
     /** Marca entrada de um pet em reserva AGENDADA. */
     @Transactional
@@ -41,8 +43,15 @@ public class PresencaService {
                     "Só é possível marcar entrada em reserva AGENDADA (atual: " + reserva.getStatus() + ")");
         }
         reserva.setStatus(StatusReserva.EM_ANDAMENTO);
-        // Etapa 4: aqui será debitado o saldo do pacote do pet.
-        log.info("Entrada marcada: reserva={} pet={}", reservaId, reserva.getPet().getNome());
+        // Débito automático de saldo do pacote (se o pet tiver saldo ativo)
+        Long pacoteConsumido = pacoteService.debitarSaldo(reserva.getPet().getId(), reserva);
+        if (pacoteConsumido != null) {
+            log.info("Entrada marcada: reserva={} pet={} pacote debitado={}",
+                    reservaId, reserva.getPet().getNome(), pacoteConsumido);
+        } else {
+            log.info("Entrada marcada: reserva={} pet={} (sem saldo de pacote)",
+                    reservaId, reserva.getPet().getNome());
+        }
         return reservaMapper.toResponseDTO(reserva);
     }
 
@@ -87,7 +96,7 @@ public class PresencaService {
         List<ReservaResponseDTO> marcadas = new ArrayList<>();
         for (Reserva reserva : agendadas) {
             reserva.setStatus(StatusReserva.EM_ANDAMENTO);
-            // Etapa 4: débito de saldo do pacote aqui.
+            pacoteService.debitarSaldo(reserva.getPet().getId(), reserva);
             marcadas.add(reservaMapper.toResponseDTO(reserva));
         }
         log.info("Marcadas {} entradas no dia {}", marcadas.size(), dia);
