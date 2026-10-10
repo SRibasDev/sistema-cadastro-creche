@@ -21,7 +21,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({
             PetNotFoundException.class,
             TutorNotFoundException.class,
-            HospedagemNotFoundException.class
+            HospedagemNotFoundException.class,
+            ReservaNotFoundException.class
     })
     public ResponseEntity<ErrorResponse> handleNotFound(RuntimeException e) {
         return ResponseEntity
@@ -52,7 +53,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({
             TutorCpfAlreadyExistsException.class,
             TutorPhoneNumberAlreadyExistsException.class,
-            PetJaHospedadoException.class
+            PetJaHospedadoException.class,
+            PetComReservaNoPeriodoException.class,
+            CapacidadeExcedidaException.class,
+            IllegalPresenceStateException.class
     })
     public ResponseEntity<ErrorResponse> handleConflict(RuntimeException e) {
         return ResponseEntity
