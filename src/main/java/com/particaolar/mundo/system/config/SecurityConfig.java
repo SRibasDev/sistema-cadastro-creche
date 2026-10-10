@@ -6,6 +6,7 @@ import com.particaolar.mundo.system.security.filter.JwtAuthFilter;
 import com.particaolar.mundo.system.security.service.UsuarioService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -30,6 +31,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -40,6 +42,13 @@ public class SecurityConfig {
     private final JwtAuthFilter jwtAuthFilter;
     private final UsuarioService usuarioService;
     private final ObjectMapper objectMapper;
+
+    /**
+     * Origens CORS permitidas, separadas por vírgula (padrões, ex.:
+     * https://app.exemplo.com.br). SaaS: ponto único de configuração de origem.
+     */
+    @Value("${cors.allowed-origins:http://localhost:[*],https://localhost:[*]}")
+    private String allowedOrigins;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -69,24 +78,36 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
                         .requestMatchers("/api/auth/login").permitAll()
-                        .requestMatchers("/api/auth/register").permitAll()
+
+                        // Auth management — ADMIN only. /register always creates
+                        // FUNCIONARIO; /usuarios pode criar qualquer perfil.
+                        .requestMatchers(HttpMethod.POST, "/api/auth/register").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/auth/usuarios").hasRole("ADMIN")
 
                         // Static UI & assets (test interface)
                         .requestMatchers("/", "/index.html", "/favicon.ico").permitAll()
                         .requestMatchers("/css/**", "/js/**", "/img/**").permitAll()
 
-                        // Swagger/OpenAPI
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        // Swagger/OpenAPI — ADMIN only (disable via SWAGGER_ENABLED=false in prod)
+                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html",
+                                "/v3/api-docs/**").hasRole("ADMIN")
 
                         // Actuator - health public, rest for ADMIN
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers("/actuator/**").hasRole("ADMIN")
 
-                        // Business endpoints
+                        // Presence: FUNCIONARIO may mark presence only
+                        .requestMatchers(HttpMethod.POST, "/api/presencas/**").hasAnyRole("ADMIN", "FUNCIONARIO")
+                        .requestMatchers(HttpMethod.PATCH, "/api/presencas/**").hasAnyRole("ADMIN", "FUNCIONARIO")
+
+                        // All other writes are ADMIN only (reservas, tutores, pets,
+                        // servicos, pacotes, cobrancas...)
+                        .requestMatchers(HttpMethod.POST, "/api/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/**").hasAnyRole("ADMIN", "FUNCIONARIO")
-                        .requestMatchers(HttpMethod.PUT, "/api/**").hasAnyRole("ADMIN", "FUNCIONARIO")
-                        .requestMatchers(HttpMethod.PATCH, "/api/**").hasAnyRole("ADMIN", "FUNCIONARIO")
+
+                        // Reads for both profiles
                         .requestMatchers(HttpMethod.GET, "/api/**").hasAnyRole("ADMIN", "FUNCIONARIO")
 
                         .anyRequest().authenticated()
@@ -99,10 +120,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of(
-                "http://localhost:[*]",
-                "https://localhost:[*]"
-        ));
+        config.setAllowedOriginPatterns(
+                Arrays.stream(allowedOrigins.split(","))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .toList());
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of(
                 "Authorization",

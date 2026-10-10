@@ -8,6 +8,7 @@ import com.particaolar.mundo.system.exception.TutorCpfAlreadyExistsException;
 import com.particaolar.mundo.system.exception.TutorNotFoundException;
 import com.particaolar.mundo.system.exception.TutorPhoneNumberAlreadyExistsException;
 import com.particaolar.mundo.system.mapper.TutorMapper;
+import com.particaolar.mundo.system.util.Documentos;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -24,10 +25,12 @@ public class TutorService {
 
     @Transactional
     public TutorResponseDTO salvarTutor(TutorRequestDTO requestDTO) {
-        if (tutorRepository.existsByCpf(requestDTO.cpf())) {
+        String cpf = Documentos.normalizarCpf(requestDTO.cpf());
+        String telefone = Documentos.normalizarTelefone(requestDTO.telefone());
+        if (tutorRepository.existsByCpf(cpf)) {
             throw new TutorCpfAlreadyExistsException();
         }
-        if (tutorRepository.existsByTelefone(requestDTO.telefone())) {
+        if (tutorRepository.existsByTelefone(telefone)) {
             throw new TutorPhoneNumberAlreadyExistsException();
         }
         log.info("Tutor validado com sucesso: {}", requestDTO.nome());
@@ -58,13 +61,16 @@ public class TutorService {
         Tutor tutor = tutorRepository.findByIdAndAtivoTrue(tutorId)
                 .orElseThrow(() -> new TutorNotFoundException(tutorId));
 
-        if (!tutor.getCpf().equals(requestDTO.cpf()) &&
-                tutorRepository.existsByCpf(requestDTO.cpf())) {
+        String cpf = Documentos.normalizarCpf(requestDTO.cpf());
+        String telefone = Documentos.normalizarTelefone(requestDTO.telefone());
+
+        if (!cpf.equals(Documentos.normalizarCpf(tutor.getCpf()))
+                && tutorRepository.existsByCpf(cpf)) {
             throw new TutorCpfAlreadyExistsException();
         }
 
-        if (!tutor.getTelefone().equals(requestDTO.telefone()) &&
-                tutorRepository.existsByTelefone(requestDTO.telefone())) {
+        if (!telefone.equals(Documentos.normalizarTelefone(tutor.getTelefone()))
+                && tutorRepository.existsByTelefone(telefone)) {
             throw new TutorPhoneNumberAlreadyExistsException();
         }
 

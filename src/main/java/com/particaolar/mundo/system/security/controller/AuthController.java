@@ -1,8 +1,10 @@
 package com.particaolar.mundo.system.security.controller;
 
+import com.particaolar.mundo.system.enums.Role;
 import com.particaolar.mundo.system.security.dto.LoginRequestDTO;
 import com.particaolar.mundo.system.security.dto.LoginResponseDTO;
 import com.particaolar.mundo.system.security.dto.RegisterRequestDTO;
+import com.particaolar.mundo.system.security.dto.UsuarioRequestDTO;
 import com.particaolar.mundo.system.security.entity.Usuario;
 import com.particaolar.mundo.system.security.repository.UsuarioRepository;
 import com.particaolar.mundo.system.security.service.JwtService;
@@ -48,18 +50,34 @@ public class AuthController {
         return ResponseEntity.ok(new LoginResponseDTO(token, usuario.getNome(), usuario.getRole().name()));
     }
 
+    /**
+     * Registra um FUNCIONARIO. Restrito a ADMIN (SecurityConfig).
+     */
     @PostMapping("/register")
     public ResponseEntity<Void> register(@RequestBody @Valid RegisterRequestDTO dto) {
-        if (usuarioRepository.findByEmail(dto.email()).isPresent()) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        criarUsuario(dto.nome(), dto.email(), dto.senha(), Role.FUNCIONARIO);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    /**
+     * Cria um usuário com perfil livre (ADMIN ou FUNCIONARIO). Restrito a ADMIN.
+     */
+    @PostMapping("/usuarios")
+    public ResponseEntity<Void> criarUsuarioComRole(@RequestBody @Valid UsuarioRequestDTO dto) {
+        criarUsuario(dto.nome(), dto.email(), dto.senha(), dto.role());
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    private void criarUsuario(String nome, String email, String senha, Role role) {
+        if (usuarioRepository.findByEmail(email).isPresent()) {
+            throw new IllegalStateException("Já existe usuário com este e-mail");
         }
         Usuario usuario = new Usuario();
-        usuario.setNome(dto.nome());
-        usuario.setEmail(dto.email());
-        usuario.setSenha(passwordEncoder.encode(dto.senha()));
-        usuario.setRole(dto.role());
+        usuario.setNome(nome);
+        usuario.setEmail(email);
+        usuario.setSenha(passwordEncoder.encode(senha));
+        usuario.setRole(role);
         usuarioRepository.save(usuario);
-        log.info("Novo usuário registrado: {}", usuario.getEmail());
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+        log.info("Novo usuário criado: {} ({})", usuario.getEmail(), role);
     }
 }

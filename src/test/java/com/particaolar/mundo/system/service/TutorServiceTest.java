@@ -46,8 +46,9 @@ class TutorServiceTest {
         tutorSalvo.setId(1L);
         TutorResponseDTO responseDTO = new TutorResponseDTO(1L, "João", "11999999999");
 
-        when(tutorRepository.existsByCpf(requestDTO.cpf())).thenReturn(false);
-        when(tutorRepository.existsByTelefone(requestDTO.telefone())).thenReturn(false);
+        // Service normaliza CPF/telefone para apenas dígitos antes de consultar
+        when(tutorRepository.existsByCpf("12345678900")).thenReturn(false);
+        when(tutorRepository.existsByTelefone("11999999999")).thenReturn(false);
         when(tutorMapper.toEntity(requestDTO)).thenReturn(tutor);
         when(tutorRepository.save(tutor)).thenReturn(tutorSalvo);
         when(tutorMapper.toResponseDTO(tutorSalvo)).thenReturn(responseDTO);
@@ -63,7 +64,7 @@ class TutorServiceTest {
     void deveLancarExcecaoQuandoCpfJaCadastrado() {
         TutorRequestDTO requestDTO = new TutorRequestDTO("João", "11999999999","102.065.345-4");
 
-        when(tutorRepository.existsByCpf(requestDTO.cpf())).thenReturn(true);
+        when(tutorRepository.existsByCpf("1020653454")).thenReturn(true);
 
         assertThrows(TutorCpfAlreadyExistsException.class,
                 () -> tutorService.salvarTutor(requestDTO));
@@ -76,8 +77,8 @@ class TutorServiceTest {
     void deveLancarExcecaoQuandoTelefoneJaCadastrado() {
         TutorRequestDTO requestDTO = new TutorRequestDTO("João", "11999999999", "123.456.789-00");
 
-        when(tutorRepository.existsByCpf(requestDTO.cpf())).thenReturn(false);
-        when(tutorRepository.existsByTelefone(requestDTO.telefone())).thenReturn(true);
+        when(tutorRepository.existsByCpf("12345678900")).thenReturn(false);
+        when(tutorRepository.existsByTelefone("11999999999")).thenReturn(true);
 
         assertThrows(TutorPhoneNumberAlreadyExistsException.class,
                 () -> tutorService.salvarTutor(requestDTO));

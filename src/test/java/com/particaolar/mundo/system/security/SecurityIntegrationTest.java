@@ -25,6 +25,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.Date;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -77,7 +79,7 @@ class SecurityIntegrationTest {
 
         Tutor tutor = new Tutor();
         tutor.setNome("Tutor Teste"); tutor.setTelefone("11988887777");
-        tutor.setCpf("529.982.247-25"); tutor.setAtivo(true);
+        tutor.setCpf("52998224725"); tutor.setAtivo(true);
         tutor.setCriadoEm(java.time.LocalDateTime.now());
         tutor.setAtualizadoEm(java.time.LocalDateTime.now());
         tutor = tutorRepository.save(tutor);
@@ -187,5 +189,129 @@ class SecurityIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isUnauthorized());
+    }
+
+    // ===== Novos testes de permissão (Etapa 1) =====
+
+    @Test
+    void registerAnonimoRetorna401() throws Exception {
+        // Anônimo não autenticado recebe 401 (entry point), não 403
+        String json = """
+                {"nome":"Novo","email":"novo@test.com","senha":"senha12345"}""";
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void registerFuncionarioRetorna403() throws Exception {
+        String json = """
+                {"nome":"Novo","email":"novo@test.com","senha":"senha12345"}""";
+        mockMvc.perform(post("/api/auth/register")
+                        .header("Authorization", funcionarioToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void registerAdminCriaFuncionario() throws Exception {
+        String json = """
+                {"nome":"Novo Func","email":"novo.func@test.com","senha":"senha12345"}""";
+        mockMvc.perform(post("/api/auth/register")
+                        .header("Authorization", adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isCreated());
+
+        assertTrue(usuarioRepository.findByEmail("novo.func@test.com").isPresent());
+        assertEquals(Role.FUNCIONARIO,
+                usuarioRepository.findByEmail("novo.func@test.com").get().getRole());
+    }
+
+    @Test
+    void criarUsuarioComRoleExigeAdmin() throws Exception {
+        String json = """
+                {"nome":"Novo Admin","email":"novo.admin@test.com","senha":"senha12345","role":"ADMIN"}""";
+        mockMvc.perform(post("/api/auth/usuarios")
+                        .header("Authorization", funcionarioToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isForbidden());
+
+        mockMvc.perform(post("/api/auth/usuarios")
+                        .header("Authorization", adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void funcionarioNaoPodeCriarTutor() throws Exception {
+        String json = """
+                {"nome":"Tutor","telefone":"11966665555","cpf":"52998224725"}""";
+        mockMvc.perform(post("/api/tutores")
+                        .header("Authorization", funcionarioToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void funcionarioNaoPodeEditarPet() throws Exception {
+        String json = """
+                {"nome":"Rex","raca":"Labrador","dataNascimento":"2020-01-01"}""";
+        mockMvc.perform(put("/api/pets/" + petId)
+                        .header("Authorization", funcionarioToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void funcionarioNaoPodeCriarHospedagem() throws Exception {
+        String json = """
+                {"petId":%d,"dataEntrada":"2030-07-01","dataSaida":"2030-07-05"}""";
+        mockMvc.perform(post("/api/hospedagens")
+                        .header("Authorization", funcionarioToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json.formatted(petId)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void funcionarioPodeConsultarMasNaoEscrever() throws Exception {
+        mockMvc.perform(get("/api/tutores")
+                        .header("Authorization", funcionarioToken))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/v3/api-docs")
+                        .header("Authorization", funcionarioToken))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void adminCriaTutorComCpfMascaradoENormaliza() throws Exception {
+        // 111.444.777-35 é um CPF válido de teste; o banco deve gravar 11144477735
+        String json = """
+                {"nome":"Tutor Mascara","telefone":"(11) 95555-4444","cpf":"111.444.777-35"}""";
+        mockMvc.perform(post("/api/tutores")
+                        .header("Authorization", adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void cpfComEMascaraSemMascaraEhDuplicado() throws Exception {
+        // Mesmo CPF do setUp (52998224725) chegando mascarado deve dar 409
+        String json = """
+                {"nome":"Tutor Duplicado","telefone":"11933332222","cpf":"529.982.247-25"}""";
+        mockMvc.perform(post("/api/tutores")
+                        .header("Authorization", adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isConflict());
     }
 }
