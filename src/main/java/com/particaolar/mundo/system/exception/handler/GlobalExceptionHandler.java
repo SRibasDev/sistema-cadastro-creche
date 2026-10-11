@@ -52,7 +52,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({
             TutorCpfAlreadyExistsException.class,
             TutorPhoneNumberAlreadyExistsException.class,
-            PetJaHospedadoException.class
+            PetJaHospedadoException.class,
+            ReservaConflitanteException.class,
+            CapacidadeExcedidaException.class
     })
     public ResponseEntity<ErrorResponse> handleConflict(RuntimeException e) {
         return ResponseEntity

@@ -32,7 +32,8 @@ public class PetService {
         Pet pet = petMapper.toEntity(requestDTO);
         pet.setTutor(tutor);
         Pet petSalvo = petRepository.save(pet);
-        log.info("Pet salvo com sucesso: {} | Tutor: {}", petSalvo.getNome(), tutor.getNome());
+        // Evita logar nomes (PII); usa apenas identificadores.
+        log.info("Pet cadastrado id={} tutorId={}", petSalvo.getId(), tutor.getId());
         return petMapper.toResponseDTO(petSalvo);
     }
 

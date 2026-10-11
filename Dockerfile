@@ -16,8 +16,11 @@ WORKDIR /app
 COPY --from=builder /app/target/*.jar app.jar
 USER appuser
 
+# Fuso horário consistente com a aplicação (America/São_Paulo)
+ENV TZ=America/Sao_Paulo
+
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1
 
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Duser.timezone=America/Sao_Paulo", "-jar", "app.jar"]

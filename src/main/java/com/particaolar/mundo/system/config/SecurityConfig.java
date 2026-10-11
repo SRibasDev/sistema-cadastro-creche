@@ -6,6 +6,7 @@ import com.particaolar.mundo.system.security.filter.JwtAuthFilter;
 import com.particaolar.mundo.system.security.service.UsuarioService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -13,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -30,12 +32,19 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
+
+    /** Origens permitidas, separadas por vírgula (ex.: https://app.creche.com,http://localhost:5173). */
+    @Value("${app.cors.allowed-origins:http://localhost:5173,http://localhost:3000,http://localhost:8080}")
+    private String allowedOrigins;
 
     private final JwtAuthFilter jwtAuthFilter;
     private final UsuarioService usuarioService;
@@ -67,27 +76,36 @@ public class SecurityConfig {
                                         "Você não tem permissão para acessar este recurso"))
                 )
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints
-                        .requestMatchers("/api/auth/login").permitAll()
-                        .requestMatchers("/api/auth/register").permitAll()
+                        // Login é o único endpoint de auth público.
+                        .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
 
-                        // Static UI & assets (test interface)
+                        // UI estática de operação (tela de login). Sem dados sensíveis.
                         .requestMatchers("/", "/index.html", "/favicon.ico").permitAll()
                         .requestMatchers("/css/**", "/js/**", "/img/**").permitAll()
 
-                        // Swagger/OpenAPI
-                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        // Swagger/OpenAPI: NUNCA público. Restrito a ADMIN (defesa em profundidade,
+                        // além de springdoc estar desativado por padrão via SWAGGER_ENABLED=false).
+                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html",
+                                "/v3/api-docs/**", "/v3/api-docs").hasRole("ADMIN")
 
-                        // Actuator - health public, rest for ADMIN
+                        // Actuator - health público (probes), resto só ADMIN.
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers("/actuator/**").hasRole("ADMIN")
 
-                        // Business endpoints
+                        // Registro de usuários: EXCLUSIVO PARA ADMIN.
+                        // Defesa em profundidade — o controller também exige @PreAuthorize.
+                        .requestMatchers(HttpMethod.POST, "/api/auth/register").hasRole("ADMIN")
+
+                        // Exclusões (lógicas) são administrativas.
                         .requestMatchers(HttpMethod.DELETE, "/api/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/**").hasAnyRole("ADMIN", "FUNCIONARIO")
-                        .requestMatchers(HttpMethod.PUT, "/api/**").hasAnyRole("ADMIN", "FUNCIONARIO")
-                        .requestMatchers(HttpMethod.PATCH, "/api/**").hasAnyRole("ADMIN", "FUNCIONARIO")
-                        .requestMatchers(HttpMethod.GET, "/api/**").hasAnyRole("ADMIN", "FUNCIONARIO")
+
+                        // Demais operações de negócio exigem autenticação.
+                        // A autorização fina (quem pode criar/editar o quê) é feita por
+                        // @PreAuthorize nos services/controllers, validada no backend.
+                        .requestMatchers(HttpMethod.POST, "/api/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/**").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/api/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/**").authenticated()
 
                         .anyRequest().authenticated()
                 )
@@ -99,10 +117,13 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of(
-                "http://localhost:[*]",
-                "https://localhost:[*]"
-        ));
+        List<String> origins = Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .map(s -> s.toLowerCase(Locale.ROOT))
+                .toList();
+        // Origin patterns permitem wildcards de porta em dev (ex.: http://localhost:*).
+        config.setAllowedOriginPatterns(origensSeguras(origins));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of(
                 "Authorization",
@@ -117,6 +138,18 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
+    }
+
+    /**
+     * Trava de segurança: nunca AllowCredentials com origem curinga "*"/"null".
+     * Se alguém configurar "*", reduzimos para localhost em vez de refletir qualquer origem.
+     */
+    private List<String> origensSeguras(List<String> origins) {
+        boolean temCuringa = origins.contains("*") || origins.contains("null");
+        if (temCuringa) {
+            return List.of("http://localhost:5173");
+        }
+        return origins;
     }
 
     @Bean

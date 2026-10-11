@@ -1,11 +1,18 @@
 package com.particaolar.mundo.system.domain.entity;
 
+import com.particaolar.mundo.system.enums.Modalidade;
 import com.particaolar.mundo.system.enums.StatusHospedagem;
 import jakarta.persistence.*;
 import lombok.*;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/**
+ * Representa uma reserva (creche ou hotel) para um pet.
+ *
+ * <p>O intervalo é semifechado [dataEntrada, dataSaida): a saída de uma reserva
+ * pode coincidir com a entrada da seguinte. A capacidade é avaliada por data de
+ * calendário (de dataEntrada a dataSaida, inclusive).</p>
+ */
 @Entity
 @Table(name = "tb_hospedagens")
 @Getter
@@ -22,11 +29,18 @@ public class Hospedagem {
     @JoinColumn(name = "pet_id", nullable = false)
     private Pet pet;
 
-    @Column(nullable = false)
-    private LocalDate dataEntrada;
+    /** Modalidade da reserva (CRECHE ou HOTEL). */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private Modalidade modalidade;
 
-    @Column(nullable = false)
-    private LocalDate dataSaida;
+    /** Entrada com data e horário. */
+    @Column(name = "data_entrada", nullable = false)
+    private LocalDateTime dataEntrada;
+
+    /** Saída com data e horário. */
+    @Column(name = "data_saida", nullable = false)
+    private LocalDateTime dataSaida;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -34,6 +48,10 @@ public class Hospedagem {
 
     @Column(length = 200)
     private String observacoes;
+
+    /** Motivo do cancelamento ou da falta (obrigatório nessas transições). */
+    @Column(name = "motivo_cancelamento", length = 500)
+    private String motivoCancelamento;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime criadoEm;
@@ -51,6 +69,9 @@ public class Hospedagem {
     private void prePersist() {
         if (this.status == null) {
             this.status = StatusHospedagem.AGENDADA;
+        }
+        if (this.modalidade == null) {
+            this.modalidade = Modalidade.HOTEL;
         }
         this.criadoEm = LocalDateTime.now();
         this.atualizadoEm = LocalDateTime.now();

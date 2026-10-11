@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,11 +19,13 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/hospedagens")
 @RequiredArgsConstructor
+@PreAuthorize("hasAnyRole('ADMIN', 'FUNCIONARIO')")
 public class HospedagemController {
 
     private final HospedagemService hospedagemService;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<HospedagemResponseDTO> salvar(@RequestBody @Valid HospedagemRequestDTO dto) {
         HospedagemResponseDTO response = hospedagemService.salvar(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -45,18 +48,40 @@ public class HospedagemController {
     }
 
     @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<HospedagemResponseDTO> atualizarStatus(@PathVariable Long id, @RequestParam StatusHospedagem status) {
         return ResponseEntity.ok(hospedagemService.atualizarStatus(id, status));
     }
 
+    @PostMapping("/{id}/check-in")
+    public ResponseEntity<HospedagemResponseDTO> checkIn(@PathVariable Long id) {
+        return ResponseEntity.ok(hospedagemService.checkIn(id));
+    }
+
+    @PostMapping("/{id}/check-out")
+    public ResponseEntity<HospedagemResponseDTO> checkOut(@PathVariable Long id) {
+        return ResponseEntity.ok(hospedagemService.checkOut(id));
+    }
+
+    @PostMapping("/{id}/falta")
+    public ResponseEntity<HospedagemResponseDTO> marcarFalta(
+            @PathVariable Long id,
+            @RequestParam(name = "motivo") String motivo) {
+        return ResponseEntity.ok(hospedagemService.marcarFalta(id, motivo));
+    }
+
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<HospedagemResponseDTO> atualizar(@PathVariable Long id, @RequestBody @Valid HospedagemRequestDTO dto) {
         return ResponseEntity.ok(hospedagemService.atualizar(id, dto));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> cancelar(@PathVariable Long id) {
-        hospedagemService.cancelar(id);
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> cancelar(
+            @PathVariable Long id,
+            @RequestParam(name = "motivo", required = false) String motivo) {
+        hospedagemService.cancelar(id, motivo);
         return ResponseEntity.noContent().build();
     }
 }

@@ -6,11 +6,15 @@ API REST desenvolvida em Java com Spring Boot para gerenciar o dia a dia de uma 
 
 ## O que o sistema faz
 
-- Cadastro completo de tutores e pets com validações
-- Controle de hospedagens com status (Agendada, Em andamento, Concluída, Cancelada)
+- Cadastro completo de tutores e pets com validações e normalização de CPF/telefone
+- Reservas de **creche** e **hotel** com data/hora de entrada e saída (`LocalDateTime`)
+- **Anti-conflito**: o mesmo pet não pode ter reservas sobrepostas (intervalos adjacentes são permitidos)
+- **Capacidade configurável por modalidade/dia**, com proteção contra overbooking em reservas concorrentes
+- Presença operacional: **check-in**, **check-out** e **falta com motivo** (acessível a FUNCIONARIO)
+- Cancelamento com **motivo obrigatório** (mín. 3 caracteres) e regra de negócio no banco (CHECK)
 - Exclusão lógica — os dados nunca somem do banco, apenas ficam inativos
-- Listagem paginada para não sobrecarregar o servidor
-- Autenticação via JWT com dois perfis: ADMIN e FUNCIONARIO
+- Listagem paginada para não sobrecarregar o servidor (máx. 100 por página)
+- Autenticação via JWT com dois perfis: ADMIN e FUNCIONARIO (matriz de permissões abaixo)
 - Respostas de erro padronizadas em toda a API
 
 ---
@@ -67,10 +71,17 @@ DB_PASSWORD=sua_senha_aqui
 JWT_SECRET=uma_chave_secreta_com_pelo_menos_32_caracteres
 JWT_EXPIRATION=3600000
 
-# Servidor / ferramentas
+# Servidor / Ambiente
 SERVER_PORT=8080
-SWAGGER_ENABLED=true
+SPRING_PROFILES_ACTIVE=prod
+
+# Capacidade por modalidade (vagas por dia)
+APP_CRECHE_CAPACIDADE_CRECHE=10
+APP_CRECHE_CAPACIDADE_HOTEL=20
 ```
+
+> `JWT_SECRET` não tem valor padrão — a aplicação **não sobe** sem ele (`jwt.secret=${JWT_SECRET}`).
+> `JWT_EXPIRATION` é opcional (padrão: `3600000` ms = 1h).
 
 ### 3. Suba a aplicação + banco (Docker)
 
@@ -105,7 +116,7 @@ SWAGGER_ENABLED=true
 Execute a classe `SystemApplication.java` pelo IntelliJ.
 
 - API: `http://localhost:8080`
-- Swagger: `http://localhost:8080/swagger-ui/index.html`
+- Swagger: `http://localhost:8080/swagger-ui/index.html` (apenas no perfil `dev` e com token de ADMIN)
 - Interface de testes (UI estática): `http://localhost:8080/`
 - Health check: `http://localhost:8080/actuator/health` (público)
 
@@ -113,23 +124,34 @@ Execute a classe `SystemApplication.java` pelo IntelliJ.
 
 ## Autenticação
 
-Todos os endpoints são protegidos. Primeiro faça login para receber o token.
+Todos os endpoints de dados são protegidos. Primeiro faça login para receber o token.
 
-No primeiro boot, o `DataSeeder` cria dois usuários padrão:
+### Provisionamento do 1º dono (ADMIN)
 
-- `admin@creche.com` / `admin123` — perfil **ADMIN**
-- `func@creche.com` / `func123` — perfil **FUNCIONARIO**
+Não existe registro público de usuários. O primeiro ADMIN é criado de forma explícita
+e controlada (sem credenciais padrão no código):
 
-> Em ambiente real, remova o `DataSeeder` ou troque as senhas padrão.
+1. Defina no ambiente, **uma única vez**, no primeiro deploy:
 
-```
-POST /api/auth/login
-```
+   ```env
+   APP_BOOTSTRAP_ADMIN_ENABLED=true
+   APP_BOOTSTRAP_ADMIN_EMAIL=dono@creche.com
+   APP_BOOTSTRAP_ADMIN_PASSWORD=<senha_forte_min_12_caracteres>
+   APP_BOOTSTRAP_ADMIN_NOME=Dono
+   ```
+
+2. Suba a aplicação. Ela cria o ADMIN apenas se a tabela de usuários estiver vazia
+   (recusa senha fraca e não registra a senha em log).
+3. Faça login, troque a senha e volte `APP_BOOTSTRAP_ADMIN_ENABLED=false`.
+
+> Demais usuários (funcionários) são criados por um ADMIN autenticado via
+> `POST /api/auth/register`. Não há auto-elevação de permissões.
 
 ```json
+POST /api/auth/login
 {
-  "email": "admin@creche.com",
-  "senha": "admin123"
+  "email": "dono@creche.com",
+  "senha": "<senha_forte_min_12_caracteres>"
 }
 ```
 
@@ -138,7 +160,7 @@ Resposta:
 ```json
 {
   "token": "eyJ...",
-  "nome": "Admin",
+  "nome": "Dono",
   "role": "ADMIN"
 }
 ```
@@ -149,32 +171,43 @@ Use o token nas requisições seguintes no header:
 Authorization: Bearer eyJ...
 ```
 
-### Cadastrar novo usuário
+### Cadastrar novo usuário (somente ADMIN)
 
 ```
 POST /api/auth/register
+Authorization: Bearer <token de um ADMIN>
 ```
 
 ```json
 {
   "nome": "Novo Funcionário",
   "email": "novo@creche.com",
-  "senha": "senha_segura_123",
+  "senha": "Senha_segura_123",
   "role": "FUNCIONARIO"
 }
 ```
 
-Resposta: `201 Created`. Se o e-mail já estiver em uso, retorna `409 Conflict`. A senha deve ter no mínimo 8 caracteres.
+Resposta: `201 Created`. Se o e-mail já estiver em uso, retorna `409 Conflict`.
+A senha deve ter no mínimo 8 caracteres, com maiúsculas, minúsculas e números.
+Quem não for ADMIN recebe `401` (sem token) ou `403` (token de funcionário).
 
 ### Permissões por perfil
 
-| Acao | ADMIN | FUNCIONARIO |
-|------|-------|-------------|
-| GET | Sim | Sim |
-| POST | Sim | Sim |
-| PUT | Sim | Sim |
-| PATCH | Sim | Sim |
-| DELETE | Sim | Nao |
+Validação no **backend** (rota + `@PreAuthorize`); esconder botões no frontend não basta.
+
+| Ação / Recurso                  | ADMIN | FUNCIONARIO |
+|--------------------------------|-------|-------------|
+| GET (leitura de dados)         | Sim   | Sim         |
+| POST/PUT/PATCH (cadastros)     | Sim   | Sim*        |
+| DELETE (exclusão lógica)       | Sim   | Não         |
+| POST `/api/auth/register`      | Sim   | Não         |
+| Swagger (`/v3/api-docs`)       | Sim   | Não         |
+| Actuator (exceto health)       | Sim   | Não         |
+
+> \* Funcionário registra presença/operações do dia a dia. Ações administrativas
+> restritas (cadastro/exclusão de usuários, gestão financeira) serão refinadas
+> com `@PreAuthorize` por módulo nas próximas fases.
+
 
 ---
 
@@ -222,7 +255,21 @@ Resposta: `201 Created`. Se o e-mail já estiver em uso, retorna `409 Conflict`.
 
 > **Paginação:** `GET /api/tutores`, `/api/pets` e `/api/hospedagens` aceitam `?page=0&size=10&sort=id,asc`. O tamanho máximo de página é **100**.
 >
-> **Status da hospedagem:** além dos dados, o status também é validado — uma hospedagem `CONCLUIDA` ou `CANCELADA` não pode ser alterada, e só são permitidas transições válidas (`AGENDADA` → `EM_ANDAMENTO`/`CANCELADA`, `EM_ANDAMENTO` → `CONCLUIDA`/`CANCELADA`).
+> **Reserva ≠ presença.** Criar a reserva (`POST`) não coloca o pet na creche — é preciso
+> fazer check-in (`POST /{id}/check-in`) no dia, e check-out (`POST /{id}/check-out`) na saída.
+> Faltas são registradas com motivo (`POST /{id}/falta?motivo=...`).
+>
+> **Sobreposição:** o mesmo pet não pode ter duas reservas ativas (`AGENDADA`/`EM_ANDAMENTO`)
+> com intervalos sobrepostos. Intervalos **adjacentes** (saída == entrada) são **permitidos**.
+> Resposta: `409 Conflict`.
+>
+> **Capacidade:** cada modalidade tem um limite de vagas **por dia de calendário**
+> (`APP_CRECHE_CAPACIDADE_CRECHE` / `APP_CRECHE_CAPACIDADE_HOTEL`, padrões 10/20).
+> A verificação percorre todos os dias do intervalo; reservas concorrentes disputando a
+> última vaga são serializadas (lock + transação) — uma passa, a outra recebe `409`.
+>
+> **Regras válidas para ambos os perfis (quando autorizados):** entrada deve ser presente/futura,
+> saída deve ser futura e posterior à entrada.
 
 ---
 
@@ -252,24 +299,86 @@ POST /api/pets/1
 }
 ```
 
-### Criar hospedagem
+### Criar reserva (modalidade + data/hora)
 
 ```json
 POST /api/hospedagens
 
 {
   "petId": 1,
-  "dataEntrada": "2025-07-01",
-  "dataSaida": "2025-07-05",
+  "modalidade": "CRECHE",
+  "dataEntrada": "2026-10-13T08:00:00",
+  "dataSaida": "2026-10-13T18:00:00",
   "observacoes": "Pet alérgico a frango"
 }
 ```
 
-### Atualizar status da hospedagem
+> `modalidade`: `CRECHE` ou `HOTEL`. Adjacência é permitida (saída == próxima entrada);
+> sobreposição do mesmo pet retorna `409`. Capacidade cheia também retorna `409`.
+
+### Reagendar reserva (ADMIN)
+
+```json
+PUT /api/hospedagens/1
+
+{
+  "petId": 1,
+  "modalidade": "CRECHE",
+  "dataEntrada": "2026-10-14T08:00:00",
+  "dataSaida": "2026-10-14T18:00:00",
+  "observacoes": "Remarcado a pedido do tutor"
+}
+```
+
+### Presença (ADMIN ou FUNCIONARIO)
+
+```
+POST /api/hospedagens/1/check-in
+POST /api/hospedagens/1/check-out
+POST /api/hospedagens/1/falta?motivo=Tutor%20avisou%20que%20o%20pet%20est%C3%A1%20doente
+```
+
+### Cancelar reserva (ADMIN, motivo obrigatório)
+
+```
+DELETE /api/hospedagens/1?motivo=Tutor%20desistiu%20da%20viagem
+```
+
+### Atualizar status da hospedagem (ADMIN)
 
 ```
 PATCH /api/hospedagens/1/status?status=EM_ANDAMENTO
 ```
+
+---
+
+## Banco de dados e migrações (Flyway)
+
+O schema é versionado — o Hibernate **valida** (`ddl-auto=validate`), nunca altera o banco.
+As migrações ficam em `src/main/resources/db/migration/` e rodam automaticamente na subida:
+
+| Versão | O que faz |
+|--------|-----------|
+| V1 | Schema inicial (tutores, pets, hospedagens, usuários) |
+| V2 | Normaliza CPF/telefone existentes (só dígitos) |
+| V3 | Reservas com data/hora (`DATETIME`), coluna `modalidade` (`CRECHE`/`HOTEL`, default `HOTEL`), CHECK de intervalo e índices de sobreposição/capacidade |
+| V4 | `motivo_cancelamento` + status `FALTA`, com CHECK exigindo motivo (mín. 3 chars) em `CANCELADA`/`FALTA` |
+
+> Bases existentes (V1) são migradas automaticamente: datas viram meia-noite e a modalidade
+> assume `HOTEL`. Para mudar a modalidade de registros antigos, edite via API (ADMIN).
+
+---
+
+## Testes
+
+```bash
+.\mvnw.cmd -B clean test
+```
+
+Última execução verificada: **53 testes, 0 falhas, 0 erros** (`BUILD SUCCESS`).
+Cobrem regressão de segurança (registro anônimo→401, FUNCIONARIO→403, Swagger restrito),
+normalização de CPF/telefone, CRUD de tutores/pets e regras de reserva (sobreposição,
+capacidade, check-in/out, transições de status, motivo obrigatório).
 
 ---
 
@@ -308,7 +417,7 @@ O fluxo é sempre unidirecional. O controller não acessa o repository diretamen
 
 ```
 src/main/java/com/particaolar/mundo/system/
-├── config/              # SecurityConfig, OpenApiConfig, DataSeeder
+├── config/              # SecurityConfig, AdminBootstrap
 ├── controller/          # PetController, TutorController, HospedagemController
 ├── domain/
 │   ├── entity/          # Pet, Tutor, Hospedagem
@@ -346,3 +455,30 @@ Além do código Java, o projeto também contém:
 - Histórico completo dos pets
 - Integração com pagamentos
 - Dashboard administrativo
+
+---
+
+## Histórico de mudanças (Fase 1–4)
+
+**Fase 1–2 — Auditoria e plano:** ver `DIAGNOSTICO_E_PLANO.md`
+(stack confirmada, 12 riscos catalogados, plano por fases).
+
+**Fase 3 — Segurança e fundação:**
+- Registro de usuários restrito a ADMIN (rota + `@PreAuthorize`); anônimo recebe 401, FUNCIONARIO recebe 403
+- `DataSeeder` com senha padrão removido; `AdminBootstrap` com gate por propriedade, sem credenciais no código
+- Swagger desativado por padrão e restrito a ADMIN; CORS por variável de ambiente
+- `ddl-auto=validate` (Flyway é a fonte de verdade); fuso `America/Sao_Paulo` consistente
+- Normalização de CPF/telefone (só dígitos) antes de persistir e de checar unicidade
+- Logs sem PII/senhas; `.gitignore` corrigido; `JWT_SECRET` obrigatório sem default
+
+**Fase 4 — Reservas, capacidade e presença:**
+- Reservas com `modalidade` (`CRECHE`/`HOTEL`) e data/hora (`LocalDateTime`)
+- Anti-sobreposição por pet (adjacência permitida) → `409`
+- Capacidade configurável por modalidade/dia, com lock + transação contra overbooking → `409`
+- Check-in / check-out / falta (FUNCIONARIO pode operar presença)
+- Cancelamento com motivo obrigatório + CHECK no banco; status `FALTA`
+- Migrações V2 (normalização), V3 (data/hora + modalidade), V4 (motivo + FALTA)
+- Testes: **53 testes, 0 falhas** (`mvnw clean test`, `BUILD SUCCESS`)
+
+> Pendências conhecidas: rate-limit de login, validação das migrações contra MySQL 8 real
+> (testes usam H2), teste de concorrência real com MySQL. Ver `DIAGNOSTICO_E_PLANO.md`.

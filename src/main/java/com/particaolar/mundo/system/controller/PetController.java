@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,11 +18,13 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/pets")
 @RequiredArgsConstructor
+@PreAuthorize("hasAnyRole('ADMIN', 'FUNCIONARIO')")
 public class PetController {
 
     private final PetService petService;
 
     @PostMapping("/{tutorId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PetResponseDTO> cadastrar(@PathVariable Long tutorId,  @Validated @RequestBody PetRequestDTO requestDTO) {
         PetResponseDTO responseDTO = petService.salvar(requestDTO,tutorId);
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
@@ -46,6 +49,7 @@ public class PetController {
     }
 
     @PutMapping("/{petId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PetResponseDTO> atualizar(@PathVariable Long petId, @RequestBody @Validated PetRequestDTO requestDTO){
         PetResponseDTO pets = petService.atualizar(requestDTO,petId);
         return ResponseEntity.ok(pets);

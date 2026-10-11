@@ -39,6 +39,39 @@ class TutorServiceTest {
     private TutorService tutorService;
 
     @Test
+    void deveNormalizarCpfAntesDeVerificarUnicidade() {
+        // Entrada com máscara; o serviço deve normalizar antes de consultar o repositório.
+        TutorRequestDTO requestDTO = new TutorRequestDTO("Maria", "(11) 97777-6666", "529.982.247-25");
+        Tutor tutor = new Tutor();
+
+        when(tutorRepository.existsByCpf("52998224725")).thenReturn(false);
+        when(tutorRepository.existsByTelefone("11977776666")).thenReturn(false);
+        when(tutorMapper.toEntity(requestDTO)).thenReturn(tutor);
+        when(tutorRepository.save(tutor)).thenReturn(tutor);
+        when(tutorMapper.toResponseDTO(tutor)).thenReturn(new TutorResponseDTO(1L, "Maria", "11977776666"));
+
+        tutorService.salvarTutor(requestDTO);
+
+        // Confirma que a consulta de unicidade usou o valor normalizado (apenas dígitos).
+        verify(tutorRepository).existsByCpf("52998224725");
+        verify(tutorRepository).existsByTelefone("11977776666");
+        verify(tutorRepository).save(tutor);
+    }
+
+    @Test
+    void deveDetectarCpfDuplicadoMesmoComMascaraDiferente() {
+        // Mesmo CPF, formato diferente do armazenado — deve ser tratado como duplicata.
+        TutorRequestDTO requestDTO = new TutorRequestDTO("Outro", "11900000000", "529.982.247-25");
+
+        when(tutorRepository.existsByCpf("52998224725")).thenReturn(true);
+
+        assertThrows(TutorCpfAlreadyExistsException.class,
+                () -> tutorService.salvarTutor(requestDTO));
+
+        verify(tutorRepository, never()).save(any());
+    }
+
+    @Test
     void deveSalvarTutorComSucesso() {
         TutorRequestDTO requestDTO = new TutorRequestDTO("João", "11999999999", "123.456.789-00");
         Tutor tutor = new Tutor();
@@ -46,8 +79,9 @@ class TutorServiceTest {
         tutorSalvo.setId(1L);
         TutorResponseDTO responseDTO = new TutorResponseDTO(1L, "João", "11999999999");
 
-        when(tutorRepository.existsByCpf(requestDTO.cpf())).thenReturn(false);
-        when(tutorRepository.existsByTelefone(requestDTO.telefone())).thenReturn(false);
+        // O serviço normaliza o CPF antes de consultar unicidade.
+        when(tutorRepository.existsByCpf("12345678900")).thenReturn(false);
+        when(tutorRepository.existsByTelefone("11999999999")).thenReturn(false);
         when(tutorMapper.toEntity(requestDTO)).thenReturn(tutor);
         when(tutorRepository.save(tutor)).thenReturn(tutorSalvo);
         when(tutorMapper.toResponseDTO(tutorSalvo)).thenReturn(responseDTO);
@@ -63,7 +97,7 @@ class TutorServiceTest {
     void deveLancarExcecaoQuandoCpfJaCadastrado() {
         TutorRequestDTO requestDTO = new TutorRequestDTO("João", "11999999999","102.065.345-4");
 
-        when(tutorRepository.existsByCpf(requestDTO.cpf())).thenReturn(true);
+        when(tutorRepository.existsByCpf("1020653454")).thenReturn(true);
 
         assertThrows(TutorCpfAlreadyExistsException.class,
                 () -> tutorService.salvarTutor(requestDTO));
@@ -76,8 +110,8 @@ class TutorServiceTest {
     void deveLancarExcecaoQuandoTelefoneJaCadastrado() {
         TutorRequestDTO requestDTO = new TutorRequestDTO("João", "11999999999", "123.456.789-00");
 
-        when(tutorRepository.existsByCpf(requestDTO.cpf())).thenReturn(false);
-        when(tutorRepository.existsByTelefone(requestDTO.telefone())).thenReturn(true);
+        when(tutorRepository.existsByCpf("12345678900")).thenReturn(false);
+        when(tutorRepository.existsByTelefone("11999999999")).thenReturn(true);
 
         assertThrows(TutorPhoneNumberAlreadyExistsException.class,
                 () -> tutorService.salvarTutor(requestDTO));

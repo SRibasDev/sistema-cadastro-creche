@@ -4,16 +4,22 @@ import com.particaolar.mundo.system.enums.Role;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record RegisterRequestDTO(
         @NotBlank @Size(max = 100)
         String nome,
 
-        @NotBlank @Email
+        @NotBlank @Email @Size(max = 100)
         String email,
 
-        @NotBlank @Size(min = 8, max = 100, message = "Senha deve ter no mínimo 8 caracteres")
+        @NotBlank
+        @Size(min = 8, max = 100, message = "Senha deve ter no mínimo 8 caracteres")
+        @Pattern(
+                regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d).+$",
+                message = "Senha deve conter letras maiúsculas, minúsculas e números"
+        )
         String senha,
 
         @NotNull

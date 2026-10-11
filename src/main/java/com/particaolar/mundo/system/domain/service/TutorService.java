@@ -8,6 +8,7 @@ import com.particaolar.mundo.system.exception.TutorCpfAlreadyExistsException;
 import com.particaolar.mundo.system.exception.TutorNotFoundException;
 import com.particaolar.mundo.system.exception.TutorPhoneNumberAlreadyExistsException;
 import com.particaolar.mundo.system.mapper.TutorMapper;
+import com.particaolar.mundo.system.support.NormalizadorDados;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -24,15 +25,21 @@ public class TutorService {
 
     @Transactional
     public TutorResponseDTO salvarTutor(TutorRequestDTO requestDTO) {
-        if (tutorRepository.existsByCpf(requestDTO.cpf())) {
+        // Normaliza ANTES de qualquer verificação de unicidade: "529.982.247-25" e
+        // "52998224725" devem ser reconhecidos como o mesmo CPF.
+        String cpf = NormalizadorDados.normalizarCpf(requestDTO.cpf());
+        String telefone = NormalizadorDados.normalizarTelefone(requestDTO.telefone());
+
+        if (tutorRepository.existsByCpf(cpf)) {
             throw new TutorCpfAlreadyExistsException();
         }
-        if (tutorRepository.existsByTelefone(requestDTO.telefone())) {
+        if (tutorRepository.existsByTelefone(telefone)) {
             throw new TutorPhoneNumberAlreadyExistsException();
         }
-        log.info("Tutor validado com sucesso: {}", requestDTO.nome());
+
         Tutor tutor = tutorMapper.toEntity(requestDTO);
         Tutor tutorSalvo = tutorRepository.save(tutor);
+        log.info("Tutor cadastrado id={}", tutorSalvo.getId());
         return tutorMapper.toResponseDTO(tutorSalvo);
     }
 
@@ -58,13 +65,15 @@ public class TutorService {
         Tutor tutor = tutorRepository.findByIdAndAtivoTrue(tutorId)
                 .orElseThrow(() -> new TutorNotFoundException(tutorId));
 
-        if (!tutor.getCpf().equals(requestDTO.cpf()) &&
-                tutorRepository.existsByCpf(requestDTO.cpf())) {
+        // Normaliza para comparar com o valor já persistido (também normalizado).
+        String cpf = NormalizadorDados.normalizarCpf(requestDTO.cpf());
+        String telefone = NormalizadorDados.normalizarTelefone(requestDTO.telefone());
+
+        if (!cpf.equals(tutor.getCpf()) && tutorRepository.existsByCpf(cpf)) {
             throw new TutorCpfAlreadyExistsException();
         }
 
-        if (!tutor.getTelefone().equals(requestDTO.telefone()) &&
-                tutorRepository.existsByTelefone(requestDTO.telefone())) {
+        if (!telefone.equals(tutor.getTelefone()) && tutorRepository.existsByTelefone(telefone)) {
             throw new TutorPhoneNumberAlreadyExistsException();
         }
 

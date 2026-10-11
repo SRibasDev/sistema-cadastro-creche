@@ -18,7 +18,6 @@ target/
 *.iws
 *.iml
 *.ipr
-*.xml
 
 ### NetBeans ###
 /nbproject/private/
@@ -39,3 +38,9 @@ build/
 # Ambiente e segredos
 .env
 *.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.p12
+*.jks

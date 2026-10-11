@@ -4,5 +4,6 @@ public enum StatusHospedagem{
     AGENDADA,
     EM_ANDAMENTO,
     CONCLUIDA,
-    CANCELADA
+    CANCELADA,
+    FALTA
 }
