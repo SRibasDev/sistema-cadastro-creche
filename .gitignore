@@ -58,3 +58,6 @@ secrets/
 *.pem
 *.p12
 *.jks
+
+# Launcher local com credenciais de teste (nunca versionar)
+iniciar-sistema.bat
