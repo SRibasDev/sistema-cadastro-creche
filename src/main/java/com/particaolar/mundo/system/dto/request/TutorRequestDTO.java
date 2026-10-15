@@ -1,5 +1,6 @@
 package com.particaolar.mundo.system.dto.request;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -24,6 +25,17 @@ public record TutorRequestDTO(
         // Persistência e unicidade usam a forma normalizada (só dígitos).
         @NotBlank(message = "CPF é obrigatório")
         @CPF(message = "CPF inválido")
-        String cpf
+        String cpf,
 
-) {}
+        @Email(message = "Formato de e-mail inválido")
+        @Size(max = 100, message = "E-mail deve ter no máximo 100 caracteres")
+        String email,
+
+        @Size(max = 500, message = "Observações deve ter no máximo 500 caracteres")
+        String observacoes
+
+) {
+    public TutorRequestDTO(String nome, String telefone, String cpf) {
+        this(nome, telefone, cpf, null, null);
+    }
+}

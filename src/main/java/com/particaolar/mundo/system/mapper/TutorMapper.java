@@ -9,12 +9,19 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class TutorMapper {
+
     public Tutor toEntity(@NotNull TutorRequestDTO dto) {
         Tutor tutorEntity = new Tutor();
-        tutorEntity.setNome(dto.nome());
-        // Normaliza na persistão: garante forma canônica independente da entrada.
+        tutorEntity.setNome(dto.nome().trim());
+        // Normaliza na persistência: garante forma canônica independente da entrada.
         tutorEntity.setTelefone(NormalizadorDados.normalizarTelefone(dto.telefone()));
         tutorEntity.setCpf(NormalizadorDados.normalizarCpf(dto.cpf()));
+        if (dto.email() != null && !dto.email().isBlank()) {
+            tutorEntity.setEmail(NormalizadorDados.normalizarEmail(dto.email()));
+        }
+        if (dto.observacoes() != null) {
+            tutorEntity.setObservacoes(dto.observacoes().trim());
+        }
         return tutorEntity;
     }
 
@@ -22,12 +29,24 @@ public class TutorMapper {
         return new TutorResponseDTO(
                 tutorEntity.getId(),
                 tutorEntity.getNome(),
-                tutorEntity.getTelefone()
+                tutorEntity.getTelefone(),
+                tutorEntity.getCpf(),
+                tutorEntity.getEmail(),
+                tutorEntity.getObservacoes(),
+                tutorEntity.getAtivo(),
+                tutorEntity.getCriadoEm()
         );
     }
-    public void updateEntityFromDTO(@NotNull TutorRequestDTO dto,@NotNull Tutor tutor){
-        tutor.setNome(dto.nome());
+
+    public void updateEntityFromDTO(@NotNull TutorRequestDTO dto, @NotNull Tutor tutor) {
+        tutor.setNome(dto.nome().trim());
         tutor.setTelefone(NormalizadorDados.normalizarTelefone(dto.telefone()));
         tutor.setCpf(NormalizadorDados.normalizarCpf(dto.cpf()));
+        if (dto.email() != null) {
+            tutor.setEmail(dto.email().isBlank() ? null : NormalizadorDados.normalizarEmail(dto.email()));
+        }
+        if (dto.observacoes() != null) {
+            tutor.setObservacoes(dto.observacoes().trim());
+        }
     }
 }

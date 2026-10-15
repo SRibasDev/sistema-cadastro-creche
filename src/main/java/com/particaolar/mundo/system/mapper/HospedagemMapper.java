@@ -14,6 +14,9 @@ public class HospedagemMapper {
         hospedagem.setDataEntrada(dto.dataEntrada());
         hospedagem.setDataSaida(dto.dataSaida());
         hospedagem.setObservacoes(dto.observacoes());
+        if (dto.precoAcordado() != null) {
+            hospedagem.setPrecoAcordado(dto.precoAcordado());
+        }
         return hospedagem;
     }
 
@@ -22,14 +25,19 @@ public class HospedagemMapper {
                 hospedagem.getId(),
                 hospedagem.getPet().getId(),
                 hospedagem.getPet().getNome(),
-                hospedagem.getPet().getTutor().getNome(),
+                hospedagem.getPet().getTutor() != null ? hospedagem.getPet().getTutor().getNome() : null,
                 hospedagem.getModalidade(),
                 hospedagem.getDataEntrada(),
                 hospedagem.getDataSaida(),
                 hospedagem.getStatus(),
                 hospedagem.getObservacoes(),
                 hospedagem.getMotivoCancelamento(),
-                hospedagem.getCriadoEm()
+                hospedagem.getCriadoEm(),
+                hospedagem.getServico() != null ? hospedagem.getServico().getId() : null,
+                hospedagem.getServico() != null ? hospedagem.getServico().getNome() : null,
+                hospedagem.getPrecoAcordado(),
+                hospedagem.getCheckInEm(),
+                hospedagem.getCheckOutEm()
         );
     }
 
@@ -38,5 +46,8 @@ public class HospedagemMapper {
         hospedagem.setDataEntrada(dto.dataEntrada());
         hospedagem.setDataSaida(dto.dataSaida());
         hospedagem.setObservacoes(dto.observacoes());
+        if (dto.precoAcordado() != null) {
+            hospedagem.setPrecoAcordado(dto.precoAcordado());
+        }
     }
 }

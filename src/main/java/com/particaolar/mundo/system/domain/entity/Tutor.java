@@ -30,6 +30,12 @@ public class Tutor {
     @Column(unique = true, length = 14)
     private String cpf;
 
+    @Column(length = 100)
+    private String email;
+
+    @Column(length = 500)
+    private String observacoes;
+
     @OneToMany(mappedBy = "tutor", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private List<Pet> pets;
 

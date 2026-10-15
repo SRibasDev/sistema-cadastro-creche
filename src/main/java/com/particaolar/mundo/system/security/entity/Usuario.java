@@ -35,6 +35,29 @@ public class Usuario implements UserDetails {
     @Column(nullable = false, length = 20)
     private Role role;
 
+    @Column(name = "ativo", nullable = false)
+    private Boolean ativo = true;
+
+    @Column(name = "criado_em", nullable = false, updatable = false)
+    private java.time.LocalDateTime criadoEm;
+
+    @Column(name = "atualizado_em", nullable = false)
+    private java.time.LocalDateTime atualizadoEm;
+
+    @PrePersist
+    private void prePersist() {
+        if (this.ativo == null) {
+            this.ativo = true;
+        }
+        this.criadoEm = java.time.LocalDateTime.now();
+        this.atualizadoEm = java.time.LocalDateTime.now();
+    }
+
+    @PreUpdate
+    private void preUpdate() {
+        this.atualizadoEm = java.time.LocalDateTime.now();
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
@@ -48,5 +71,25 @@ public class Usuario implements UserDetails {
     @Override
     public String getUsername() {
         return email;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return Boolean.TRUE.equals(this.ativo);
     }
 }

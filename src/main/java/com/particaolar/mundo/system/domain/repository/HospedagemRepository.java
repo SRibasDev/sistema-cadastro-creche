@@ -82,4 +82,17 @@ public interface HospedagemRepository extends JpaRepository<Hospedagem, Long> {
                            @Param("excluindoId") Long excluindoId);
 
     boolean existsByPetIdAndStatusIn(Long petId, Collection<StatusHospedagem> statuses);
+
+    long countByStatus(StatusHospedagem status);
+
+    List<Hospedagem> findByStatus(StatusHospedagem status);
+
+    List<Hospedagem> findTop10ByStatusAndDataEntradaAfterOrderByDataEntradaAsc(
+            StatusHospedagem status, LocalDateTime agora);
+
+    long countByStatusAndDataEntradaBetween(StatusHospedagem status, LocalDateTime inicio, LocalDateTime fim);
+
+    long countByStatusAndDataSaidaBetween(StatusHospedagem status, LocalDateTime inicio, LocalDateTime fim);
+
+    List<Hospedagem> findByDataEntradaBetween(LocalDateTime inicio, LocalDateTime fim);
 }

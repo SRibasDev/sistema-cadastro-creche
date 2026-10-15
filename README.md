@@ -396,68 +396,92 @@ O fluxo é sempre unidirecional. O controller não acessa o repository diretamen
 
 ```
 src/main/java/com/particaolar/mundo/system/
-├── config/              # SecurityConfig, AdminBootstrap
-├── controller/          # PetController, TutorController, HospedagemController
+├── config/              # SecurityConfig, AdminBootstrap, TransactionConfig
+├── controller/          # PetController, TutorController, HospedagemController,
+│                        # ServicoController, CobrancaController, DashboardController, RelatorioController
 ├── domain/
-│   ├── entity/          # Pet, Tutor, Hospedagem
-│   ├── repository/      # PetRepository, TutorRepository, HospedagemRepository
-│   └── service/         # PetService, TutorService, HospedagemService
+│   ├── entity/          # Pet, Tutor, Hospedagem, Servico, Cobranca, Pagamento, AuditLog
+│   ├── repository/      # PetRepository, TutorRepository, HospedagemRepository,
+│   │                    # ServicoRepository, CobrancaRepository, PagamentoRepository, AuditLogRepository
+│   └── service/         # PetService, TutorService, HospedagemService,
+│                        # ServicoService, CobrancaService, DashboardService, RelatorioService, AuditLogService
 ├── dto/
-│   ├── request/         # DTOs de entrada com validações
+│   ├── request/         # DTOs de entrada com Bean Validation
 │   └── response/        # DTOs de saída
-├── enums/               # StatusHospedagem, Role, Porte
-├── exception/           # Exceções customizadas
+├── enums/               # StatusHospedagem, Role, Porte, TipoServico, UnidadeCobranca, StatusCobranca, FormaPagamento
+├── exception/           # Exceções de domínio e negócio (400, 404, 409)
 │   └── handler/         # GlobalExceptionHandler, ErrorResponse
-├── mapper/              # PetMapper, TutorMapper, HospedagemMapper
+├── mapper/              # PetMapper, TutorMapper, HospedagemMapper, ServicoMapper, CobrancaMapper
 └── security/            # JWT, filtros e autenticação
-    ├── controller/      # AuthController
-    ├── dto/             # LoginRequestDTO, LoginResponseDTO, RegisterRequestDTO
-    ├── entity/          # Usuario
+    ├── controller/      # AuthController, UsuarioController
+    ├── dto/             # LoginRequestDTO, LoginResponseDTO, RegisterRequestDTO, UsuarioResponseDTO, etc.
+    ├── entity/          # Usuario (UserDetails com isEnabled() vinculado a status ativo)
     ├── filter/          # JwtAuthFilter
     ├── repository/      # UsuarioRepository
     └── service/         # JwtService, UsuarioService
 ```
 
-Além do código Java, o projeto também contém:
+Além do código Java, o projeto contém:
 
-- `src/main/resources/static/` — interface web estática (HTML/CSS/JS) servida em `/`
-- `src/main/resources/db/migration/` — migrações de banco do Flyway
-- `src/test/` — testes unitários (Mockito) e de integração de segurança (H2 + MockMvc)
-
----
-
-## Funcionalidades planejadas
-
-- Agendamentos online
-- Área do cliente
-- Controle de vacinas
-- Histórico completo dos pets
-- Integração com pagamentos
-- Dashboard administrativo
+- `src/main/resources/static/` — interface web completa e responsiva servida em `/`
+- `src/main/resources/db/migration/` — migrações de banco do Flyway (V1 a V7)
+- `src/test/` — suite de testes automatizados com JUnit 5, Mockito e MockMvc (85 testes, 0 falhas)
 
 ---
 
-## Histórico de mudanças (Fase 1–4)
+## Módulos e Endpoints da API
 
-**Fase 1–2 — Auditoria e plano:** ver `DIAGNOSTICO_E_PLANO.md`
-(stack confirmada, 12 riscos catalogados, plano por fases).
+### Autenticação & Usuários
+- `POST /api/auth/login` — Login JWT (público)
+- `POST /api/auth/register` — Cadastro de usuário (ADMIN)
+- `GET /api/usuarios` — Listar funcionários e usuários (ADMIN)
+- `GET /api/usuarios/{id}` — Detalhes de usuário (ADMIN)
+- `PUT /api/usuarios/{id}` — Atualizar usuário (ADMIN)
+- `PATCH /api/usuarios/{id}/status?ativo={true|false}` — Ativar/desativar usuário (ADMIN)
+- `PATCH /api/usuarios/{id}/senha` — Redefinir senha de usuário
 
-**Fase 3 — Segurança e fundação:**
-- Registro de usuários restrito a ADMIN (rota + `@PreAuthorize`); anônimo recebe 401, FUNCIONARIO recebe 403
-- `DataSeeder` com senha padrão removido; `AdminBootstrap` com gate por propriedade, sem credenciais no código
-- Swagger desativado por padrão e restrito a ADMIN; CORS por variável de ambiente
-- `ddl-auto=validate` (Flyway é a fonte de verdade); fuso `America/Sao_Paulo` consistente
-- Normalização de CPF/telefone (só dígitos) antes de persistir e de checar unicidade
-- Logs sem PII/senhas; `.gitignore` corrigido; `JWT_SECRET` obrigatório sem default
+### Tutores & Pets
+- `GET /api/tutores` — Listar tutores paginados
+- `POST /api/tutores` — Cadastrar tutor (ADMIN)
+- `PUT /api/tutores/{id}` — Atualizar tutor (ADMIN)
+- `DELETE /api/tutores/{id}` — Desativação lógica de tutor (ADMIN)
+- `GET /api/pets` — Listar pets paginados
+- `POST /api/pets/{tutorId}` — Cadastrar pet com dados de saúde e vacinas (ADMIN)
+- `PUT /api/pets/{petId}` — Atualizar pet (ADMIN)
+- `DELETE /api/pets/{petId}` — Desativação lógica de pet (ADMIN)
 
-**Fase 4 — Reservas, capacidade e presença:**
-- Reservas com `modalidade` (`CRECHE`/`HOTEL`) e data/hora (`LocalDateTime`)
-- Anti-sobreposição por pet (adjacência permitida) → `409`
-- Capacidade configurável por modalidade/dia, com lock + transação contra overbooking → `409`
-- Check-in / check-out / falta (FUNCIONARIO pode operar presença)
-- Cancelamento com motivo obrigatório + CHECK no banco; status `FALTA`
-- Migrações V2 (normalização), V3 (data/hora + modalidade), V4 (motivo + FALTA)
-- Testes: **53 testes, 0 falhas** (`mvnw clean test`, `BUILD SUCCESS`)
+### Serviços & Tarifas
+- `GET /api/servicos` — Listar serviços ativos do catálogo
+- `GET /api/servicos/todos` — Listar todos os serviços (ADMIN)
+- `POST /api/servicos` — Cadastrar serviço (ADMIN)
+- `PUT /api/servicos/{id}` — Atualizar serviço (ADMIN)
+- `PATCH /api/servicos/{id}/status?ativo={true|false}` — Ativar/desativar serviço (ADMIN)
 
-> Pendências conhecidas: rate-limit de login, validação das migrações contra MySQL 8 real
-> (testes usam H2), teste de concorrência real com MySQL. Ver `DIAGNOSTICO_E_PLANO.md`.
+### Reservas & Presença
+- `GET /api/hospedagens` — Listar reservas paginadas
+- `POST /api/hospedagens` — Criar reserva com congelamento de preço acordado (ADMIN)
+- `POST /api/hospedagens/{id}/check-in` — Registrar check-in real do pet (FUNCIONARIO / ADMIN)
+- `POST /api/hospedagens/{id}/check-out` — Registrar check-out real do pet (FUNCIONARIO / ADMIN)
+- `POST /api/hospedagens/{id}/falta?motivo=...` — Registrar falta com motivo obrigatório
+- `DELETE /api/hospedagens/{id}?motivo=...` — Cancelar reserva com motivo obrigatório (ADMIN)
+
+### Financeiro
+- `GET /api/cobrancas` — Listar cobranças com filtro opcional por status
+- `POST /api/cobrancas` — Emitir fatura com desconto e vencimento (ADMIN)
+- `POST /api/cobrancas/{id}/pagamentos` — Registrar recebimento (PIX, Dinheiro, Cartão, Transferência)
+- `DELETE /api/cobrancas/{id}?motivo=...` — Cancelar fatura sem pagamentos (ADMIN)
+
+### Dashboard & Relatórios
+- `GET /api/dashboard` — Métricas operacionais em tempo real e ocupação
+- `GET /api/relatorios/financeiro?inicio=...&fim=...` — Relatório de faturamento e recebimentos (ADMIN)
+- `GET /api/relatorios/reservas?inicio=...&fim=...` — Relatório de reservas do período
+
+---
+
+## Status dos Testes Automatizados
+
+Build validado com sucesso via Maven Surefire:
+- **Total de testes:** 85
+- **Falhas:** 0
+- **Erros:** 0
+- **Cobertura:** Autenticação, regressões de segurança, gestão de usuários, tutores, pets, capacidade concorrente de creche/hotel, check-in/out, falta, cancelamento, catálogo de serviços, emissão de cobranças, controle de saldo e dashboard.

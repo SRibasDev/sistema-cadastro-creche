@@ -119,4 +119,40 @@ class AuthSecurityRegressionTest {
         mockMvc.perform(get("/swagger-ui/index.html"))
                 .andExpect(status().is4xxClientError());
     }
+
+    @Test
+    @DisplayName("SEGURANÇA: usuário desativado NÃO consegue realizar login")
+    void usuarioDesativadoNaoPodeLogar() throws Exception {
+        Usuario func = usuarioRepository.findByEmail("func@reg.com").orElseThrow();
+        func.setAtivo(false);
+        usuarioRepository.save(func);
+
+        String loginJson = """
+                {
+                  "email": "func@reg.com",
+                  "senha": "Func@12345"
+                }
+                """;
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginJson))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("SEGURANÇA: FUNCIONARIO não pode listar usuários internos")
+    void funcionarioNaoPodeListarUsuarios() throws Exception {
+        mockMvc.perform(get("/api/usuarios")
+                        .header("Authorization", funcionarioToken))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("SEGURANÇA: ADMIN pode listar usuários internos")
+    void adminPodeListarUsuarios() throws Exception {
+        mockMvc.perform(get("/api/usuarios")
+                        .header("Authorization", adminToken))
+                .andExpect(status().isOk());
+    }
 }

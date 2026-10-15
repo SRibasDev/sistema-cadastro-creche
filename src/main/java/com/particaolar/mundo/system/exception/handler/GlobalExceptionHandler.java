@@ -21,7 +21,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({
             PetNotFoundException.class,
             TutorNotFoundException.class,
-            HospedagemNotFoundException.class
+            HospedagemNotFoundException.class,
+            UsuarioNotFoundException.class,
+            ServicoNotFoundException.class,
+            CobrancaNotFoundException.class
     })
     public ResponseEntity<ErrorResponse> handleNotFound(RuntimeException e) {
         return ResponseEntity

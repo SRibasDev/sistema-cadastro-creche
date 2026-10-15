@@ -52,6 +52,9 @@ class HospedagemServiceTest {
     @Mock
     private TransactionTemplate transactionTemplate;
 
+    @Mock
+    private com.particaolar.mundo.system.domain.repository.ServicoRepository servicoRepository;
+
     @InjectMocks
     private HospedagemService hospedagemService;
 

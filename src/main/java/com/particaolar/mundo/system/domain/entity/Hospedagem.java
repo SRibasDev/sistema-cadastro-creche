@@ -53,6 +53,19 @@ public class Hospedagem {
     @Column(name = "motivo_cancelamento", length = 500)
     private String motivoCancelamento;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "servico_id")
+    private Servico servico;
+
+    @Column(name = "preco_acordado", precision = 10, scale = 2)
+    private java.math.BigDecimal precoAcordado;
+
+    @Column(name = "check_in_em")
+    private LocalDateTime checkInEm;
+
+    @Column(name = "check_out_em")
+    private LocalDateTime checkOutEm;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime criadoEm;
 

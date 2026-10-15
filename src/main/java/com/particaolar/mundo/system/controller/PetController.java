@@ -56,6 +56,7 @@ public class PetController {
     }
 
     @DeleteMapping("/{petId}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deletar(@PathVariable Long petId){
         petService.deletar(petId);
         return ResponseEntity.noContent().build();

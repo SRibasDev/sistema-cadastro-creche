@@ -4,6 +4,7 @@ import com.particaolar.mundo.system.domain.entity.Hospedagem;
 import com.particaolar.mundo.system.domain.entity.Pet;
 import com.particaolar.mundo.system.domain.repository.HospedagemRepository;
 import com.particaolar.mundo.system.domain.repository.PetRepository;
+import com.particaolar.mundo.system.domain.repository.ServicoRepository;
 import com.particaolar.mundo.system.dto.request.HospedagemRequestDTO;
 import com.particaolar.mundo.system.dto.response.HospedagemResponseDTO;
 import com.particaolar.mundo.system.enums.Modalidade;
@@ -36,6 +37,7 @@ public class HospedagemService {
     private final PetRepository petRepository;
     private final HospedagemMapper hospedagemMapper;
     private final TransactionTemplate transactionTemplate;
+    private final ServicoRepository servicoRepository;
     private final Object reservaLock = new Object();
 
     @Value("${app.creche.capacidade.creche:10}")
@@ -58,6 +60,14 @@ public class HospedagemService {
                 verificarCapacidade(null, dto.modalidade(), dto.dataEntrada(), dto.dataSaida());
                 Hospedagem hospedagem = hospedagemMapper.toEntity(dto);
                 hospedagem.setPet(pet);
+                if (dto.servicoId() != null && servicoRepository != null) {
+                    servicoRepository.findById(dto.servicoId()).ifPresent(s -> {
+                        hospedagem.setServico(s);
+                        if (hospedagem.getPrecoAcordado() == null) {
+                            hospedagem.setPrecoAcordado(s.getPreco());
+                        }
+                    });
+                }
                 Hospedagem salva = hospedagemRepository.save(hospedagem);
                 log.info("Hospedagem criada petId={}", dto.petId());
                 return hospedagemMapper.toResponseDTO(salva);
@@ -175,6 +185,7 @@ public class HospedagemService {
                     + hospedagem.getStatus() + ")");
         }
         hospedagem.setStatus(StatusHospedagem.EM_ANDAMENTO);
+        hospedagem.setCheckInEm(LocalDateTime.now());
         log.info("Check-in hospedagem {}", id);
         return hospedagemMapper.toResponseDTO(hospedagem);
     }
@@ -188,6 +199,7 @@ public class HospedagemService {
                     + hospedagem.getStatus() + ")");
         }
         hospedagem.setStatus(StatusHospedagem.CONCLUIDA);
+        hospedagem.setCheckOutEm(LocalDateTime.now());
         log.info("Check-out hospedagem {}", id);
         return hospedagemMapper.toResponseDTO(hospedagem);
     }

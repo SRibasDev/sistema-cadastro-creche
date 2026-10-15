@@ -27,6 +27,25 @@ public class Pet {
     @Column(nullable = false)
     private LocalDate dataNascimento;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private com.particaolar.mundo.system.enums.Porte porte;
+
+    @Column(length = 50)
+    private String especie = "CANINO";
+
+    @Column(length = 20)
+    private String sexo;
+
+    @Column(length = 500)
+    private String observacoes;
+
+    @Column(name = "alergias_restricoes", length = 500)
+    private String alergiasRestricoes;
+
+    @Column(length = 500)
+    private String vacinas;
+
     @ManyToOne
     @JoinColumn(name = "tutor_id", nullable = false)
     private Tutor tutor;
