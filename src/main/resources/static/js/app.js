@@ -298,7 +298,7 @@ async function openHospModal() {
 
   openModal(`
     <div class="modal-header">
-      <h3>📅 Nova Reserva / Hospedagem</h3>
+      <h3>Nova Reserva / Hospedagem</h3>
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
     <div class="form-group"><label>Pet</label><select id="fPetId">${petOptions}</select></div>
@@ -692,7 +692,7 @@ async function openCobrancaModal() {
 
   openModal(`
     <div class="modal-header">
-      <h3>💰 Emitir Nova Cobrança</h3>
+      <h3>Emitir Nova Cobrança</h3>
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
     <div class="form-group"><label>Tutor Responsável</label><select id="cTutorId">${tutorOpts}</select></div>
@@ -729,7 +729,7 @@ async function openCobrancaModal() {
 function openPagamentoModal(cobrancaId, saldoDevedor) {
   openModal(`
     <div class="modal-header">
-      <h3>💳 Registrar Pagamento (Fatura #${cobrancaId})</h3>
+      <h3>Registrar Pagamento (Fatura #${cobrancaId})</h3>
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:12px">
@@ -867,7 +867,7 @@ async function openUsuarioModal(id) {
 function openTrocarSenhaModal(id) {
   openModal(`
     <div class="modal-header">
-      <h3>🔑 Redefinir Senha do Usuário #${id}</h3>
+      <h3>Redefinir Senha do Usuário #${id}</h3>
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
     <div class="form-group"><label>Nova Senha (mínimo 8 caracteres)</label><input type="password" id="novaSenhaInput"></div>

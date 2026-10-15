@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🐾 Sistema de Gestão — Creche & Hotel Pet</title>
+  <title>Sistema de Gestão — Creche & Hotel Pet</title>
   <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
 
 <header>
-  <h1>🐾 Creche & Hotel Pet</h1>
+  <h1>Creche & Hotel Pet</h1>
   <div class="user-info" id="userInfo" style="display:none">
-    👤 <span id="userName" style="font-weight:700;color:#f8fafc"></span>
+    <span id="userName" style="font-weight:700;color:#f8fafc"></span>
     <span id="userRoleBadge" class="user-badge"></span>
     <button class="btn btn-danger btn-sm" style="margin-left:8px" onclick="logout()">Sair</button>
   </div>
@@ -21,7 +21,7 @@
 
   <!-- Painel de Login -->
   <div id="loginPanel" class="login-box">
-    <h2>🔐 Acesso ao Sistema</h2>
+    <h2>Acesso ao Sistema</h2>
     <div class="form-group">
       <label for="loginEmail">E-mail</label>
       <input type="email" id="loginEmail" placeholder="seu.email@creche.com" autocomplete="username">
@@ -41,23 +41,23 @@
 
     <!-- Navegação em Abas -->
     <div class="tabs">
-      <button class="tab active" data-tab="visao-geral">📊 Visão Geral</button>
-      <button class="tab" data-tab="presenca">⏱️ Presença do Dia</button>
-      <button class="tab" data-tab="agenda">📅 Reservas & Agenda</button>
-      <button class="tab" data-tab="pets">🐕 Pets</button>
-      <button class="tab" data-tab="tutores">👤 Tutores</button>
-      <button class="tab" data-tab="servicos">🏷️ Catálogo de Serviços</button>
-      <button class="tab" data-tab="financeiro">💰 Financeiro</button>
-      <button class="tab admin-only" data-tab="funcionarios" style="display:none">👥 Funcionários</button>
-      <button class="tab admin-only" data-tab="auditoria" style="display:none">📜 Auditoria</button>
-      <button class="tab" data-tab="relatorios">📈 Relatórios</button>
+      <button class="tab active" data-tab="visao-geral">Visão Geral</button>
+      <button class="tab" data-tab="presenca">Presença do Dia</button>
+      <button class="tab" data-tab="agenda">Reservas & Agenda</button>
+      <button class="tab" data-tab="pets">Pets</button>
+      <button class="tab" data-tab="tutores">Tutores</button>
+      <button class="tab" data-tab="servicos">Catálogo de Serviços</button>
+      <button class="tab" data-tab="financeiro">Financeiro</button>
+      <button class="tab admin-only" data-tab="funcionarios" style="display:none">Funcionários</button>
+      <button class="tab admin-only" data-tab="auditoria" style="display:none">Auditoria</button>
+      <button class="tab" data-tab="relatorios">Relatórios</button>
     </div>
 
     <!-- 1. ABA: VISÃO GERAL -->
     <div id="panel-visao-geral" class="panel active">
       <div class="toolbar">
         <h3>Dashboard Operacional em Tempo Real</h3>
-        <button class="btn btn-secondary btn-sm" onclick="loadDashboard()">🔄 Atualizar Dados</button>
+        <button class="btn btn-secondary btn-sm" onclick="loadDashboard()">Atualizar Dados</button>
       </div>
 
       <div class="metrics-grid">
@@ -96,7 +96,7 @@
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:20px;">
         <div class="table-container">
           <div style="padding:14px 16px;font-weight:700;border-bottom:1px solid var(--border)">
-            🐾 Animais Presentes Agora no Estabelecimento
+            Animais Presentes Agora no Estabelecimento
           </div>
           <table>
             <thead>
@@ -124,7 +124,7 @@
     <div id="panel-presenca" class="panel">
       <div class="toolbar">
         <h3>Rotina Diária de Check-in e Check-out</h3>
-        <button class="btn btn-secondary btn-sm" onclick="loadPresenca()">🔄 Atualizar</button>
+        <button class="btn btn-secondary btn-sm" onclick="loadPresenca()">Atualizar</button>
       </div>
       <div class="table-container">
         <table>
@@ -292,7 +292,7 @@
             <input type="date" id="relDataFim">
           </div>
           <div class="form-group">
-            <button class="btn btn-primary" onclick="gerarRelatorios()" style="width:100%">🔍 Gerar Relatórios</button>
+            <button class="btn btn-primary" onclick="gerarRelatorios()" style="width:100%">Gerar Relatórios</button>
           </div>
         </div>
       </div>
@@ -317,7 +317,7 @@
 
       <div class="table-container">
         <div style="padding:14px 16px;font-weight:700;border-bottom:1px solid var(--border)">
-          📋 Reservas no Período Selecionado
+          Reservas no Período Selecionado
         </div>
         <table>
           <thead>
@@ -332,7 +332,7 @@
     <div id="panel-auditoria" class="panel">
       <div class="toolbar">
         <h3>Histórico & Logs de Auditoria Operacional</h3>
-        <button class="btn btn-secondary btn-sm" onclick="loadAuditLogs(0)">🔄 Atualizar Logs</button>
+        <button class="btn btn-secondary btn-sm" onclick="loadAuditLogs(0)">Atualizar Logs</button>
       </div>
       <div class="table-container">
         <table>
