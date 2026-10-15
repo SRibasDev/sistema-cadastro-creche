@@ -40,6 +40,9 @@ public class HospedagemService {
     private final ServicoRepository servicoRepository;
     private final Object reservaLock = new Object();
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private AuditLogService auditLogService;
+
     @Value("${app.creche.capacidade.creche:10}")
     private int capacidadeCreche = 10;
 
@@ -70,6 +73,7 @@ public class HospedagemService {
                 }
                 Hospedagem salva = hospedagemRepository.save(hospedagem);
                 log.info("Hospedagem criada petId={}", dto.petId());
+                registrarAuditLog("CRIAR_RESERVA", salva.getId(), "Modalidade: " + salva.getModalidade() + " Pet: " + pet.getNome());
                 return hospedagemMapper.toResponseDTO(salva);
             });
         }
@@ -159,6 +163,7 @@ public class HospedagemService {
         hospedagem.setMotivoCancelamento(validarMotivo(motivo));
         hospedagem.setStatus(StatusHospedagem.CANCELADA);
         log.info("Hospedagem {} cancelada", id);
+        registrarAuditLog("CANCELAR_RESERVA", id, "Motivo: " + motivo);
     }
 
     @Transactional
@@ -173,6 +178,7 @@ public class HospedagemService {
         hospedagem.setMotivoCancelamento(validarMotivo(motivo));
         hospedagem.setStatus(StatusHospedagem.FALTA);
         log.info("Falta registrada na hospedagem {}", id);
+        registrarAuditLog("MARCAR_FALTA", id, "Motivo: " + motivo);
         return hospedagemMapper.toResponseDTO(hospedagem);
     }
 
@@ -187,6 +193,7 @@ public class HospedagemService {
         hospedagem.setStatus(StatusHospedagem.EM_ANDAMENTO);
         hospedagem.setCheckInEm(LocalDateTime.now());
         log.info("Check-in hospedagem {}", id);
+        registrarAuditLog("CHECK_IN", id, "Check-in realizado para pet: " + (hospedagem.getPet() != null ? hospedagem.getPet().getNome() : "ID " + id));
         return hospedagemMapper.toResponseDTO(hospedagem);
     }
 
@@ -201,6 +208,7 @@ public class HospedagemService {
         hospedagem.setStatus(StatusHospedagem.CONCLUIDA);
         hospedagem.setCheckOutEm(LocalDateTime.now());
         log.info("Check-out hospedagem {}", id);
+        registrarAuditLog("CHECK_OUT", id, "Check-out realizado para pet: " + (hospedagem.getPet() != null ? hospedagem.getPet().getNome() : "ID " + id));
         return hospedagemMapper.toResponseDTO(hospedagem);
     }
 
@@ -264,6 +272,12 @@ public class HospedagemService {
                 throw new CapacidadeExcedidaException(dia, modalidade);
             }
             dia = dia.plusDays(1);
+        }
+    }
+
+    private void registrarAuditLog(String acao, Long id, String detalhes) {
+        if (auditLogService != null) {
+            auditLogService.registrar(null, acao, "HOSPEDAGEM", id, detalhes);
         }
     }
 }

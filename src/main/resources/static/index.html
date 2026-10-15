@@ -49,6 +49,7 @@
       <button class="tab" data-tab="servicos">🏷️ Catálogo de Serviços</button>
       <button class="tab" data-tab="financeiro">💰 Financeiro</button>
       <button class="tab admin-only" data-tab="funcionarios" style="display:none">👥 Funcionários</button>
+      <button class="tab admin-only" data-tab="auditoria" style="display:none">📜 Auditoria</button>
       <button class="tab" data-tab="relatorios">📈 Relatórios</button>
     </div>
 
@@ -324,6 +325,27 @@
           </thead>
           <tbody id="relReservasTable"></tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- 10. ABA: AUDITORIA (ADMIN) -->
+    <div id="panel-auditoria" class="panel">
+      <div class="toolbar">
+        <h3>Histórico & Logs de Auditoria Operacional</h3>
+        <button class="btn btn-secondary btn-sm" onclick="loadAuditLogs(0)">🔄 Atualizar Logs</button>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr><th>Data/Hora</th><th>Usuário</th><th>Ação</th><th>Entidade</th><th>ID</th><th>Detalhes</th></tr>
+          </thead>
+          <tbody id="auditTable"></tbody>
+        </table>
+        <div class="pagination">
+          <button class="btn btn-secondary btn-xs" onclick="loadAuditLogs(0)" id="auditPrev" disabled>← Anterior</button>
+          <span id="auditPage">Página 1</span>
+          <button class="btn btn-secondary btn-xs" onclick="loadAuditLogs(1)" id="auditNext" disabled>Próxima →</button>
+        </div>
       </div>
     </div>
 

@@ -26,6 +26,9 @@ public class UsuarioService implements UserDetailsService {
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.particaolar.mundo.system.domain.service.AuditLogService auditLogService;
+
     public UsuarioService(UsuarioRepository usuarioRepository, @Lazy PasswordEncoder passwordEncoder) {
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
@@ -75,6 +78,7 @@ public class UsuarioService implements UserDetailsService {
         usuario.setRole(dto.role());
         Usuario salvo = usuarioRepository.save(usuario);
         log.info("Usuário id={} atualizado para role={}", salvo.getId(), salvo.getRole());
+        registrarAuditLog("ATUALIZAR_USUARIO", salvo.getId(), "Email: " + salvo.getEmail() + " Role: " + salvo.getRole());
         return toDTO(salvo);
     }
 
@@ -96,6 +100,7 @@ public class UsuarioService implements UserDetailsService {
         usuario.setAtivo(ativo);
         Usuario salvo = usuarioRepository.save(usuario);
         log.info("Usuário id={} teve status ativo alterado para {}", id, ativo);
+        registrarAuditLog("ALTERAR_STATUS_USUARIO", id, "Status ativo alterado para " + ativo + " por " + solicitanteEmail);
         return toDTO(salvo);
     }
 
@@ -121,6 +126,13 @@ public class UsuarioService implements UserDetailsService {
         usuario.setSenha(passwordEncoder.encode(dto.novaSenha()));
         usuarioRepository.save(usuario);
         log.info("Senha do usuário id={} alterada com sucesso.", id);
+        registrarAuditLog("ALTERAR_SENHA_USUARIO", id, "Senha alterada por " + solicitanteEmail);
+    }
+
+    private void registrarAuditLog(String acao, Long id, String detalhes) {
+        if (auditLogService != null) {
+            auditLogService.registrar(null, acao, "USUARIO", id, detalhes);
+        }
     }
 
     public UsuarioResponseDTO toDTO(Usuario u) {

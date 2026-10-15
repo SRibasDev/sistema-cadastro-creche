@@ -24,6 +24,9 @@ public class ServicoService {
     private final ServicoRepository servicoRepository;
     private final ServicoMapper servicoMapper;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private AuditLogService auditLogService;
+
     @Transactional
     public ServicoResponseDTO salvar(ServicoRequestDTO dto) {
         if (servicoRepository.existsByNomeIgnoreCase(dto.nome().trim())) {
@@ -32,6 +35,9 @@ public class ServicoService {
         Servico entity = servicoMapper.toEntity(dto);
         Servico salvo = servicoRepository.save(entity);
         log.info("Serviço criado com ID: {} ({})", salvo.getId(), salvo.getNome());
+        if (auditLogService != null) {
+            auditLogService.registrar(null, "CRIAR_SERVICO", "SERVICO", salvo.getId(), "Nome: " + salvo.getNome() + " Preço: R$ " + salvo.getPreco());
+        }
         return servicoMapper.toResponseDTO(salvo);
     }
 
@@ -86,6 +92,9 @@ public class ServicoService {
         servicoMapper.updateEntityFromDTO(dto, s);
         Servico atualizado = servicoRepository.save(s);
         log.info("Serviço atualizado ID: {} ({})", atualizado.getId(), atualizado.getNome());
+        if (auditLogService != null) {
+            auditLogService.registrar(null, "ATUALIZAR_SERVICO", "SERVICO", atualizado.getId(), "Nome: " + atualizado.getNome() + " Preço: R$ " + atualizado.getPreco());
+        }
         return servicoMapper.toResponseDTO(atualizado);
     }
 
@@ -96,5 +105,8 @@ public class ServicoService {
         s.setAtivo(ativo);
         servicoRepository.save(s);
         log.info("Serviço ID: {} teve status ativo alterado para {}", id, ativo);
+        if (auditLogService != null) {
+            auditLogService.registrar(null, "ALTERAR_STATUS_SERVICO", "SERVICO", id, "Ativo: " + ativo);
+        }
     }
 }

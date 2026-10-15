@@ -33,6 +33,9 @@ public class AuthController {
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.particaolar.mundo.system.domain.service.AuditLogService auditLogService;
+
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody @Valid LoginRequestDTO dto) {
         String email = NormalizadorDados.normalizarEmail(dto.email());
@@ -73,8 +76,11 @@ public class AuthController {
         usuario.setEmail(email);
         usuario.setSenha(passwordEncoder.encode(dto.senha()));
         usuario.setRole(dto.role());
-        usuarioRepository.save(usuario);
-        log.info("Novo usuário registrado id={} role={}", usuario.getId(), usuario.getRole());
+        Usuario salvo = usuarioRepository.save(usuario);
+        log.info("Novo usuário registrado id={} role={}", salvo.getId(), salvo.getRole());
+        if (auditLogService != null) {
+            auditLogService.registrar(null, "CRIAR_USUARIO", "USUARIO", salvo.getId(), "Email: " + email + " Role: " + dto.role());
+        }
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 }

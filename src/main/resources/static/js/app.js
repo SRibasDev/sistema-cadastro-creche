@@ -3,7 +3,7 @@ let token = localStorage.getItem('jwt') || '';
 let userRole = localStorage.getItem('userRole') || '';
 let currentTab = 'visao-geral';
 
-let tutPage = 0, petPage = 0, hospPage = 0, cobPage = 0, userPage = 0;
+let tutPage = 0, petPage = 0, hospPage = 0, cobPage = 0, userPage = 0, auditPage = 0;
 
 function g(id) { return document.getElementById(id); }
 
@@ -934,6 +934,32 @@ async function gerarRelatorios() {
   }
 }
 
+// ==== 10. AUDITORIA ====
+async function loadAuditLogs(dir) {
+  if (dir === 0) auditPage = Math.max(0, auditPage - 1);
+  else if (dir === 1) auditPage++;
+  try {
+    const data = await api('GET', `/api/audit-logs?page=${auditPage}&size=20&sort=dataHora,desc`);
+    let h = '';
+    data.content.forEach(a => {
+      h += `<tr>
+        <td>${formatDateTime(a.dataHora)}</td>
+        <td><strong>${a.usuario}</strong></td>
+        <td><span class="badge badge-agendada">${a.acao}</span></td>
+        <td>${a.entidade}</td>
+        <td>${a.entidadeId != null ? a.entidadeId : '-'}</td>
+        <td style="font-size:13px">${a.detalhes || '-'}</td>
+      </tr>`;
+    });
+    g('auditTable').innerHTML = h || '<tr><td colspan="6" class="empty">Nenhum registro de auditoria encontrado.</td></tr>';
+    g('auditPage').textContent = `Página ${data.number + 1} de ${Math.max(1, data.totalPages)}`;
+    g('auditPrev').disabled = data.first;
+    g('auditNext').disabled = data.last;
+  } catch (err) {
+    toast('Erro ao carregar logs de auditoria: ' + err.message, 'error');
+  }
+}
+
 // ==== NAVEGAÇÃO DE ABAS ====
 document.querySelectorAll('.tab').forEach(btn => {
   btn.onclick = function() {
@@ -952,6 +978,7 @@ document.querySelectorAll('.tab').forEach(btn => {
     else if (tabName === 'servicos') loadServicos();
     else if (tabName === 'financeiro') loadCobrancas(0);
     else if (tabName === 'funcionarios') loadUsuarios(0);
+    else if (tabName === 'auditoria') loadAuditLogs(0);
     else if (tabName === 'relatorios') {
       const hoje = new Date().toISOString().split('T')[0];
       const inicioMes = new Date(new Date().setDate(1)).toISOString().split('T')[0];

@@ -40,7 +40,8 @@ Transformamos o repositório em um sistema de gestão operacional completo, segu
    - Prevenção contra pagamento maior que o saldo devedor e contra operações duplicadas via transações sincronizadas.
    - Transição automática de status da fatura: `PENDENTE` -> `PAGA_PARCIAL` -> `PAGA`.
    - Bloqueio de cancelamento de faturas com pagamentos já recebidos.
-   - Entidade `AuditLog` (`tb_audit_logs`) e serviço transacional autônomo para rastrear eventos operacionais.
+   - Entidade `AuditLog` (`tb_audit_logs`), serviço transacional autônomo `AuditLogService` e endpoint restrito `AuditLogController` (`/api/audit-logs`) para rastrear eventos operacionais (criação/cancelamento de reservas, check-in/out, faltas, emissão/baixa de cobranças, alterações de serviços e gestão de funcionários).
+   - Tela dedicada de histórico de auditoria na interface web ("📜 Auditoria") com paginação para o dono (ADMIN).
 
 6. **Dashboard e Relatórios Consolidados (Fase 5 e 7.1, 7.9):**
    - Endpoint `/api/dashboard`: métricas calculadas em tempo real (pets presentes agora, entradas previstas hoje, saídas previstas hoje, ocupação e limites de creche/hotel, faturas em aberto e montante pendente, listas de chegadas e animais presentes).
@@ -72,7 +73,7 @@ Transformamos o repositório em um sistema de gestão operacional completo, segu
 ## 2. Resultados dos Testes Automatizados
 
 Execução real realizada via Maven Surefire:
-- **Testes executados:** 85
+- **Testes executados:** 91
 - **Falhas:** 0
 - **Erros:** 0
 - **Ignorados:** 0
@@ -81,6 +82,7 @@ Execução real realizada via Maven Surefire:
 ### Detalhamento por Classe de Teste:
 - `AuthSecurityRegressionTest`: 7 testes (proteção de registro anônimo, privilégios de funcionário, swagger restrito, bloqueio de usuário desativado, listagem restrita de equipe).
 - `SecurityIntegrationTest`: 9 testes (rejeição sem token, token inválido, token expirado, proibição de deleção para funcionário, tutor inativo 404, validações de DTO, credenciais inválidas 401).
+- `AuditLogServiceTest`: 6 testes (registro com usuário explícito, fallback ao SecurityContextHolder, fallback anônimo para SISTEMA, resiliência a falhas de persistência, paginação e validação de limite de página).
 - `UsuarioServiceTest`: 13 testes (listagem paginada, busca por id, atualização cadastral, bloqueio de e-mail duplicado, proteção do único admin ativo, desativação de equipe, proteção contra auto-desativação, alteração de senha com validação da atual, redefinição por admin sem senha atual, validação de `isEnabled()`).
 - `HospedagemServiceTest`: 13 testes (reserva válida, intervalo inválido, sobreposição por pet, reservas adjacentes sem conflito, capacidade máxima por modalidade/dia, reagendamento com capacidade reavaliada, transições de status válidas e inválidas, check-in, check-out, falta com motivo, cancelamento com motivo).
 - `ServicoServiceTest`: 7 testes (salvar serviço, unicidade de nome, listagem de ativos, busca por id, busca por tipo, atualização cadastral, ativação/desativação).
