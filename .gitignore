@@ -35,6 +35,20 @@ build/
 # Logs
 *.log
 
+# Banco H2 (dados em arquivo)
+data/
+
+# Docker / Compose (removido do modo sem Docker)
+docker-compose.yml
+Dockerfile
+docker-compose*.yml
+docker-compose*.yaml
+*.dockerignore
+
+# Original (removido do modo sem Docker)
+Dockerfile.original
+docker-compose.yml.original
+
 # Ambiente e segredos
 .env
 *.env

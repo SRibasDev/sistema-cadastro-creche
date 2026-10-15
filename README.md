@@ -25,10 +25,8 @@ API REST desenvolvida em Java com Spring Boot para gerenciar o dia a dia de uma 
 - Spring Boot 3.4.1
 - Spring Security + JWT (JJWT 0.12.3)
 - Spring Data JPA + Hibernate
-- Flyway (migrações de banco)
-- MySQL 8
-- H2 (banco em memória para testes)
-- Docker e Docker Compose
+- H2 (banco em **arquivo**, para rodar sem MySQL/Docker)
+- Flyway (opcional; desativado no H2)
 - Lombok
 - Springdoc OpenAPI (Swagger)
 - Actuator + Prometheus
@@ -41,7 +39,6 @@ API REST desenvolvida em Java com Spring Boot para gerenciar o dia a dia de uma 
 ### Pré-requisitos
 
 - Java 21
-- Docker Desktop instalado e rodando
 - Git
 
 ### 1. Clone o repositório
@@ -51,76 +48,58 @@ git clone https://github.com/SRibasDev/sistema-cadastro-creche
 cd sistema-cadastro-creche
 ```
 
-### 2. Crie o arquivo `.env` na raiz do projeto
+### 2. Configure as variáveis de ambiente
 
-Copie o `.env.example` como modelo. O `JWT_SECRET` precisa ter **no mínimo 32 caracteres** (256 bits):
+Copie o `.env.example` como modelo (ou crie um `.env`):
 
 ```env
-# MySQL (usado pelo docker-compose)
-MYSQL_ROOT_PASSWORD=sua_senha_root
-MYSQL_DATABASE=creche_pet_db
-MYSQL_USER=app_user
-MYSQL_PASSWORD=sua_senha_aqui
+# Banco H2 (em arquivo, sem MySQL/Docker)
+# O caminho de dados padrão é: ./data/creche-db
 
-# Conexão local (modo desenvolvimento)
-DB_URL=jdbc:mysql://localhost:3306/creche_pet_db
-DB_USERNAME=app_user
-DB_PASSWORD=sua_senha_aqui
-
-# JWT
+# JWT (pode ser qualquer valor com pelo menos 32 caracteres em dev/local)
 JWT_SECRET=uma_chave_secreta_com_pelo_menos_32_caracteres
+
+# Opcional (padrões abaixo)
 JWT_EXPIRATION=3600000
-
-# Servidor / Ambiente
 SERVER_PORT=8080
-SPRING_PROFILES_ACTIVE=prod
-
-# Capacidade por modalidade (vagas por dia)
+SPRING_PROFILES_ACTIVE=dev
+CORS_ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000,http://localhost:8080
 APP_CRECHE_CAPACIDADE_CRECHE=10
 APP_CRECHE_CAPACIDADE_HOTEL=20
 ```
 
-> `JWT_SECRET` não tem valor padrão — a aplicação **não sobe** sem ele (`jwt.secret=${JWT_SECRET}`).
-> `JWT_EXPIRATION` é opcional (padrão: `3600000` ms = 1h).
+> `JWT_SECRET` precisa ter **no mínimo 32 caracteres** para uso em produção. Em dev local, um valor menor pode ser usado para testes (veja `application-h2.properties` como referência).
 
-### 3. Suba a aplicação + banco (Docker)
+### 3. Rode a aplicação
 
-```bash
-docker-compose up --build
-```
-
-O compose sobe o banco MySQL (com healthcheck) e a API. As migrações do banco (Flyway) são aplicadas automaticamente na subida.
-
-### 4. Rodando em desenvolvimento (IntelliJ)
-
-Suba apenas o banco, se preferir:
+#### Via Maven Wrapper (recomendado)
 
 ```bash
-docker-compose up db -d
+./mvnw.cmd spring-boot:run
 ```
 
-Depois vá em `Run > Edit Configurations > SystemApplication > Environment Variables` e configure:
+#### Via Maven Wrapper (recomendado)
 
-```
-DB_URL=jdbc:mysql://localhost:3306/creche_pet_db
-DB_USERNAME=app_user
-DB_PASSWORD=sua_senha_aqui
-JWT_SECRET=uma_chave_secreta_com_pelo_menos_32_caracteres
-JWT_EXPIRATION=3600000
-SERVER_PORT=8080
-SWAGGER_ENABLED=true
+```bash
+./mvnw.cmd spring-boot:run
 ```
 
-### 5. Rode a aplicação
+#### Via IDE
 
-Execute a classe `SystemApplication.java` pelo IntelliJ.
+Execute a classe `SystemApplication.java` pelo IntelliJ/VS Code.
+
+> **Banco:** a aplicação usa **H2 em arquivo** (`./data/creche-db`) por padrão. Não há MySQL/Docker necessário.
+>
+> **MySQL:** se quiser usar MySQL, defina `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `DB_DRIVER_CLASS=com.mysql.cj.jdbc.Driver` e `DDL_AUTO=validate` nas variáveis de ambiente. A aplicação usará o MySQL nesse caso.
 
 - API: `http://localhost:8080`
 - Swagger: `http://localhost:8080/swagger-ui/index.html` (apenas no perfil `dev` e com token de ADMIN)
 - Interface de testes (UI estática): `http://localhost:8080/`
 - Health check: `http://localhost:8080/actuator/health` (público)
 
----
+> **Banco:** a aplicação usa **H2 em arquivo** (`./data/creche-db`) por padrão. Não há MySQL/Docker necessário.
+>
+> **MySQL:** se quiser usar MySQL, defina `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `DB_DRIVER_CLASS=com.mysql.cj.jdbc.Driver` e `DDL_AUTO=validate` nas variáveis de ambiente. A aplicação usará o MySQL nesse caso.
 
 ## Autenticação
 
