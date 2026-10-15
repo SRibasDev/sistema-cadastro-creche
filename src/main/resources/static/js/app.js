@@ -145,6 +145,27 @@ async function loadDashboard() {
     g('dashPendenciasValor').textContent = formatMoney(data.totalCobrancasPendentesValor);
     g('dashPendenciasQtd').textContent = data.totalCobrancasPendentesQtd;
 
+    g('dashVacVencidas').textContent = data.vacinasVencidasQtd || 0;
+    g('dashVacAVencer').textContent = data.vacinasAVencerQtd || 0;
+
+    const vacAlertas = [...(data.vacinasVencidas || []), ...(data.vacinasAVencer || [])];
+    if (vacAlertas.length > 0) {
+      let htmlVac = '';
+      vacAlertas.forEach(v => {
+        const cls = v.situacao === 'VENCIDA' ? 'badge-cancelada' : 'badge-falta';
+        htmlVac += `<tr>
+          <td><strong>${v.petNome || ('ID ' + v.petId)}</strong></td>
+          <td>${v.nomeVacina}</td>
+          <td>${formatDate(v.dataVencimento)}</td>
+          <td><span class="badge ${cls}">${v.situacao === 'VENCIDA' ? 'VENCIDA' : 'A VENCER'}</span></td>
+        </tr>`;
+      });
+      g('vacAlertTable').innerHTML = htmlVac;
+      g('vacAlertBox').style.display = '';
+    } else {
+      g('vacAlertBox').style.display = 'none';
+    }
+
     // Tabela Presentes
     let htmlPres = '';
     data.presentesNoMomento.forEach(h => {
@@ -386,8 +407,11 @@ async function loadPets(dir) {
         <td>ID ${x.tutorId}</td>
         <td><small style="color:var(--muted)">${saude}</small></td>
         <td>
-          <button class="btn btn-primary btn-xs" onclick="openPetModal(${x.id})">Editar</button>
-          ${userRole === 'ADMIN' ? `<button class="btn btn-danger btn-xs" onclick="delPet(${x.id})">Excluir</button>` : ''}
+          <div style="display:flex;gap:4px">
+            <button class="btn btn-primary btn-xs" onclick="openPetModal(${x.id})">Editar</button>
+            <button class="btn btn-warning btn-xs" onclick="openVacinacoesModal(${x.id}, '${x.nome}')">Vacinas</button>
+            ${userRole === 'ADMIN' ? `<button class="btn btn-danger btn-xs" onclick="delPet(${x.id})">Excluir</button>` : ''}
+          </div>
         </td>
       </tr>`;
     });
@@ -476,6 +500,145 @@ async function delPet(id) {
     toast(err.message, 'error');
   }
 }
+
+// ==== 4b. VACINAÇÕES ====
+function vacSituacaoBadge(situacao) {
+  if (situacao === 'VENCIDA') return '<span class="badge badge-cancelada">VENCIDA</span>';
+  if (situacao === 'A_VENCER') return '<span class="badge badge-falta">A VENCER</span>';
+  return '<span class="badge badge-ativo">EM DIA</span>';
+}
+
+async function openVacinacoesModal(petId, petNome) {
+  let vacinas = [];
+  let vencidas = [];
+  try {
+    vacinas = await api('GET', `/api/vacinacoes/pet/${petId}`);
+    vencidas = await api('GET', `/api/vacinacoes/pet/${petId}/vencidas`).catch(() => []);
+  } catch (err) {
+    toast(err.message, 'error');
+    return;
+  }
+
+  const vencIds = new Set(vencidas.map(v => v.id));
+  const safeNome = (petNome || '').replace(/'/g, '');
+  let h = '';
+  vacinas.forEach(v => {
+    h += `<tr>
+      <td><strong>${v.nomeVacina}</strong>${vencIds.has(v.id) ? ' <span class="badge badge-cancelada">VENCIDA</span>' : ''}<br>
+        <small style="color:var(--muted)">${v.lote ? 'Lote ' + v.lote + ' · ' : ''}${v.veterinario || ''}</small></td>
+      <td>${formatDate(v.dataAplicacao)}</td>
+      <td>${formatDate(v.dataVencimento)}</td>
+      <td>${vacSituacaoBadge(v.situacao)}</td>
+      <td>${userRole === 'ADMIN' ? `<div style="display:flex;gap:4px">
+        <button class="btn btn-primary btn-xs" onclick="openVacinacaoFormModal(${petId}, '${safeNome}', ${v.id})">Editar</button>
+        <button class="btn btn-danger btn-xs" onclick="delVacinacao(${v.id}, ${petId}, '${safeNome}')">Excluir</button>
+      </div>` : '-'}</td>
+    </tr>`;
+  });
+
+  openModal(`
+    <div class="modal-header">
+      <h3>Vacinas de ${petNome || ('Pet #' + petId)}</h3>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    ${vencidas.length > 0 ? `<p style="font-size:13px;color:#ef4444;margin-bottom:12px"><strong>Atenção:</strong> este pet possui ${vencidas.length} vacina(s) vencida(s).</p>` : ''}
+    <div class="table-container" style="margin-bottom:12px">
+      <table>
+        <thead><tr><th>Vacina</th><th>Aplicação</th><th>Vencimento</th><th>Situação</th><th>Ações</th></tr></thead>
+        <tbody>${h || '<tr><td colspan="5" class="empty">Nenhuma vacina registrada.</td></tr>'}</tbody>
+      </table>
+    </div>
+    ${userRole === 'ADMIN' ? `<button class="btn btn-success" onclick="openVacinacaoFormModal(${petId}, '${safeNome}')" style="width:100%">+ Registrar Vacina</button>` : ''}
+  `);
+
+async function openVacinacaoFormModal(petId, petNome, vacId) {
+  const v = vacId ? await api('GET', '/api/vacinacoes/' + vacId) : null;
+  openModal(`
+    <div class="modal-header">
+      <h3>${vacId ? 'Editar' : 'Registrar'} Vacina — ${petNome || ('Pet #' + petId)}</h3>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="form-group"><label>Nome da Vacina *</label><input id="vNome" value="${v ? v.nomeVacina : ''}" placeholder="Ex: V10, Antirrabica, Giardia"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Data de Aplicação *</label><input type="date" id="vAplic" value="${v ? v.dataAplicacao : ''}"></div>
+      <div class="form-group"><label>Data de Vencimento *</label><input type="date" id="vVenc" value="${v ? v.dataVencimento : ''}"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Lote</label><input id="vLote" value="${v && v.lote ? v.lote : ''}" placeholder="Ex: L12345"></div>
+      <div class="form-group"><label>Veterinário</label><input id="vVet" value="${v && v.veterinario ? v.veterinario : ''}" placeholder="Nome do veterinário"></div>
+    </div>
+    <div class="form-group"><label>Observações</label><input id="vObs" value="${v && v.observacoes ? v.observacoes : ''}" placeholder="Reações, reforço..."></div>
+    <button class="btn btn-primary" id="saveVacBtn" style="width:100%;margin-top:8px">Salvar Vacina</button>
+  `);
+
+  g('saveVacBtn').onclick = async () => {
+    const body = {
+      nomeVacina: g('vNome').value.trim(),
+      dataAplicacao: g('vAplic').value || null,
+      dataVencimento: g('vVenc').value || null,
+      lote: g('vLote').value.trim() || null,
+      veterinario: g('vVet').value.trim() || null,
+      observacoes: g('vObs').value.trim() || null
+    };
+    if (!body.nomeVacina || !body.dataAplicacao || !body.dataVencimento) {
+      toast('Preencha nome, aplicação e vencimento.', 'error');
+      return;
+    }
+    try {
+      if (vacId) await api('PUT', '/api/vacinacoes/' + vacId, body);
+      else await api('POST', `/api/vacinacoes/pet/${petId}`, body);
+      toast(vacId ? 'Vacina atualizada!' : 'Vacina registrada!', 'success');
+      openVacinacoesModal(petId, petNome);
+    } catch (err) {
+      toast(err.message, 'error');
+    }
+  };
+}
+
+async function delVacinacao(vacId, petId, petNome) {
+  if (!confirm(`Confirma a exclusão do registro de vacina #${vacId}?`)) return;
+  try {
+    await api('DELETE', '/api/vacinacoes/' + vacId);
+    toast('Registro de vacina removido!', 'success');
+    openVacinacoesModal(petId, petNome);
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function openVacAlertasModal() {
+  try {
+    const vencidas = await api('GET', '/api/vacinacoes/vencidas');
+    const aVencer = await api('GET', '/api/vacinacoes/a-vencer');
+    let h = '';
+    vencidas.forEach(v => {
+      h += `<tr><td><strong>${v.petNome || ('ID ' + v.petId)}</strong></td><td>${v.nomeVacina}</td>
+        <td>${formatDate(v.dataVencimento)}</td><td><span class="badge badge-cancelada">VENCIDA</span></td></tr>`;
+    });
+    aVencer.forEach(v => {
+      h += `<tr><td><strong>${v.petNome || ('ID ' + v.petId)}</strong></td><td>${v.nomeVacina}</td>
+        <td>${formatDate(v.dataVencimento)}</td><td><span class="badge badge-falta">A VENCER</span></td></tr>`;
+    });
+    openModal(`
+      <div class="modal-header">
+        <h3>Alertas de Vacinação</h3>
+        <button class="modal-close" onclick="closeModal()">×</button>
+      </div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:12px">${vencidas.length} vencida(s) · ${aVencer.length} a vencer nos próximos 30 dias.</p>
+      <div class="table-container">
+        <table>
+          <thead><tr><th>Pet</th><th>Vacina</th><th>Vencimento</th><th>Situação</th></tr></thead>
+          <tbody>${h || '<tr><td colspan="4" class="empty">Nenhum alerta de vacina.</td></tr>'}</tbody>
+        </table>
+      </div>
+    `);
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+}
+
 
 // ==== 5. TUTORES ====
 async function loadTutores(dir) {

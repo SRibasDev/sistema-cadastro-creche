@@ -3,6 +3,7 @@ package com.particaolar.mundo.system.domain.service;
 import com.particaolar.mundo.system.domain.repository.HospedagemRepository;
 import com.particaolar.mundo.system.dto.response.DashboardDTO;
 import com.particaolar.mundo.system.dto.response.HospedagemResponseDTO;
+import com.particaolar.mundo.system.dto.response.VacinacaoResponseDTO;
 import com.particaolar.mundo.system.enums.Modalidade;
 import com.particaolar.mundo.system.enums.StatusHospedagem;
 import com.particaolar.mundo.system.mapper.HospedagemMapper;
@@ -24,6 +25,7 @@ public class DashboardService {
     private final HospedagemRepository hospedagemRepository;
     private final HospedagemMapper hospedagemMapper;
     private final CobrancaService cobrancaService;
+    private final VacinacaoService vacinacaoService;
 
     @Value("${app.creche.capacidade.creche:10}")
     private int capacidadeCreche = 10;
@@ -62,6 +64,9 @@ public class DashboardService {
                         StatusHospedagem.AGENDADA, LocalDateTime.now().minusHours(2)
                 ).stream().map(hospedagemMapper::toResponseDTO).toList();
 
+        List<VacinacaoResponseDTO> vacinasVencidas = vacinacaoService.listarVencidas();
+        List<VacinacaoResponseDTO> vacinasAVencer = vacinacaoService.listarAVencer();
+
         return new DashboardDTO(
                 petsPresentesAgora,
                 entradasPrevistasHoje,
@@ -73,7 +78,11 @@ public class DashboardService {
                 pendenciasValor,
                 pendenciasQtd,
                 presentes,
-                proximas
+                proximas,
+                vacinasVencidas.size(),
+                vacinasAVencer.size(),
+                vacinasVencidas.stream().limit(10).toList(),
+                vacinasAVencer.stream().limit(10).toList()
         );
     }
 }

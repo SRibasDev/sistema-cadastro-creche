@@ -91,6 +91,28 @@
           <div class="value" style="color:#fbbf24" id="dashPendenciasValor">R$ 0,00</div>
           <div class="sub"><span id="dashPendenciasQtd">0</span> fatura(s) em aberto</div>
         </div>
+        <div class="metric-card">
+          <div class="label">Vacinas Vencidas</div>
+          <div class="value" style="color:#ef4444" id="dashVacVencidas">0</div>
+          <div class="sub">Pets com vacina vencida</div>
+        </div>
+        <div class="metric-card">
+          <div class="label">Vacinas a Vencer (30 dias)</div>
+          <div class="value" style="color:#f59e0b" id="dashVacAVencer">0</div>
+          <div class="sub">Reforço próximo do vencimento</div>
+        </div>
+      </div>
+
+      <div class="table-container" id="vacAlertBox" style="margin-bottom:20px;display:none">
+        <div style="padding:14px 16px;font-weight:700;border-bottom:1px solid var(--border)">
+          Alertas de Vacinação
+        </div>
+        <table>
+          <thead>
+            <tr><th>Pet</th><th>Vacina</th><th>Vencimento</th><th>Situação</th></tr>
+          </thead>
+          <tbody id="vacAlertTable"></tbody>
+        </table>
       </div>
 
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:20px;">
@@ -171,7 +193,10 @@
     <div id="panel-pets" class="panel">
       <div class="toolbar">
         <h3>Pets Cadastrados</h3>
-        <button class="btn btn-success btn-sm admin-only" onclick="openPetModal()">+ Novo Pet</button>
+        <div class="toolbar-actions">
+          <button class="btn btn-warning btn-sm" onclick="openVacAlertasModal()">Alertas de Vacinas</button>
+          <button class="btn btn-success btn-sm admin-only" onclick="openPetModal()">+ Novo Pet</button>
+        </div>
       </div>
       <div class="table-container">
         <table>

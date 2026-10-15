@@ -4,6 +4,7 @@ import com.particaolar.mundo.system.domain.entity.Hospedagem;
 import com.particaolar.mundo.system.domain.repository.HospedagemRepository;
 import com.particaolar.mundo.system.domain.service.CobrancaService;
 import com.particaolar.mundo.system.domain.service.DashboardService;
+import com.particaolar.mundo.system.domain.service.VacinacaoService;
 import com.particaolar.mundo.system.dto.response.DashboardDTO;
 import com.particaolar.mundo.system.dto.response.HospedagemResponseDTO;
 import com.particaolar.mundo.system.enums.Modalidade;
@@ -37,6 +38,9 @@ class DashboardServiceTest {
     @Mock
     private CobrancaService cobrancaService;
 
+    @Mock
+    private VacinacaoService vacinacaoService;
+
     @InjectMocks
     private DashboardService dashboardService;
 
@@ -62,6 +66,8 @@ class DashboardServiceTest {
         );
         when(hospedagemRepository.findByStatus(StatusHospedagem.EM_ANDAMENTO)).thenReturn(List.of(h));
         when(hospedagemMapper.toResponseDTO(h)).thenReturn(respDTO);
+        when(vacinacaoService.listarVencidas()).thenReturn(List.of());
+        when(vacinacaoService.listarAVencer()).thenReturn(List.of());
 
         DashboardDTO dto = dashboardService.obterMetricas();
 
@@ -74,5 +80,7 @@ class DashboardServiceTest {
         assertEquals(new BigDecimal("450.00"), dto.totalCobrancasPendentesValor());
         assertEquals(3L, dto.totalCobrancasPendentesQtd());
         assertEquals(1, dto.presentesNoMomento().size());
+        assertEquals(0L, dto.vacinasVencidasQtd());
+        assertEquals(0L, dto.vacinasAVencerQtd());
     }
 }

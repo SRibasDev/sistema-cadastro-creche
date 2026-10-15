@@ -24,7 +24,8 @@ public class GlobalExceptionHandler {
             HospedagemNotFoundException.class,
             UsuarioNotFoundException.class,
             ServicoNotFoundException.class,
-            CobrancaNotFoundException.class
+            CobrancaNotFoundException.class,
+            VacinacaoNotFoundException.class
     })
     public ResponseEntity<ErrorResponse> handleNotFound(RuntimeException e) {
         return ResponseEntity
